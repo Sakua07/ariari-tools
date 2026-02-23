@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌸 効果音プレイヤー 🌸</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fff0f5;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      position: relative;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h1 { color: #e91e63; margin-bottom: 40px; }
+
+    #pageNav {
+      display: flex; justify-content: center; align-items: center;
+      gap: 40px; margin-bottom: 10px;
+    }
+
+    #pageNav button {
+      background-color: #fff; border: 2px solid #e91e63;
+      border-radius: 10px; color: #e91e63; font-weight: bold;
+      width: 60px; height: 35px; cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #pageNav button:hover:not(:disabled){ background-color:#e91e63; color:#fff; }
+    #pageNav button:disabled{ opacity:0.4; cursor:default; }
+
+    #pageIndicator{ color:#e91e63; font-weight:bold; font-size:16px; min-width:50px; }
+
+    #buttonGrid {
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:20px; justify-content:center; max-width:600px;
+      margin:0 auto 100px; transition:transform 0.3s ease;
+      transform-origin:center top;
+    }
+
+    .btn-wrap{ display:flex; flex-direction:column; align-items:center; }
+    .sound-button{
+      background-color:#ffccdd; border:none; border-radius:15px;
+      width:180px; height:120px; font-size:18px; cursor:pointer;
+      white-space:pre-line; display:flex; align-items:center;
+      justify-content:center; text-align:center;
+      transition:background-color 0.3s, transform 0.2s;
+    }
+    .sound-button:hover{ background-color:#ff99bb; }
+
+    .remove-btn{
+      background:none; border:none; color:red; font-size:20px;
+      cursor:pointer; margin-top:5px; display:none;
+    }
+
+    #editPanel{
+      width:260px; background:#fff0f5; border:2px solid #e91e63;
+      border-radius:15px; padding:15px;
+      box-shadow:0 4px 8px rgba(233,30,99,0.3);
+      font-size:14px; margin:0 auto; display:none; user-select:none;
+    }
+
+    #editPanel h2{ margin-top:0; color:#e91e63; font-size:18px; }
+    #editPanel label{ display:block; margin-top:10px; text-align:left; font-weight:bold; }
+    #editPanel input[type="text"],
+    #editPanel input[type="color"],
+    #editPanel input[type="file"],
+    #editPanel input[type="range"]{
+      width:100%; margin-top:5px; box-sizing:border-box;
+      border-radius:5px; border:1px solid #ccc; padding:5px; font-size:14px;
+    }
+
+    #editPanel .volume-control{ display:flex; align-items:center; gap:10px; margin-top:5px; }
+
+    #editPanel button{
+      padding:4px 10px; font-size:16px; cursor:pointer;
+      border-radius:6px; border:none; background-color:#e91e63; color:white;
+      transition:background-color 0.3s;
+    }
+    #editPanel button:hover{ background-color:#c2185b; }
+
+    .bottomControl{
+      display:none; flex-direction:column; align-items:center;
+      gap:10px; margin-top:20px;
+    }
+
+    .bottomControl button{
+      background-color:#e91e63; color:white; border:none;
+      border-radius:15px; width:180px; height:40px;
+      font-weight:bold; font-size:14px; cursor:pointer;
+      box-shadow:0 4px 8px rgba(233,30,99,0.4);
+      transition:background-color 0.3s;
+    }
+    .bottomControl button:hover{ background-color:#c2185b; }
+
+    #sizeControlContainer{
+      background-color:#e75480; border-radius:12px;
+      box-shadow:0 4px 8px rgba(233,30,99,0.3);
+      padding:10px; text-align:center;
+    }
+    #sizeLabel{ display:block; font-size:13px; margin-bottom:5px; color:#fff; }
+    #sizeSlider{ width:120px; }
+
+    #noSelectionMsg{ color:#e91e63; font-size:13px; margin-top:10px; }
+
+    #closeControls{ background-color:#888; }
+    #closeControls:hover{ background-color:#666; }
+
+    #editToggleContainer{
+      position:fixed; top:20px; right:20px;
+      z-index:10000; display:flex; flex-direction:column;
+      align-items:center; gap:8px;
+    }
+
+    #editToggleBtn{
+      background-color:#e91e63; color:white; border:none;
+      border-radius:15px; width:120px; height:40px;
+      font-weight:bold; cursor:pointer;
+      box-shadow:0 4px 8px rgba(233,30,99,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="pageNav">
+    <button id="prevPage">←</button>
+    <span id="pageIndicator">1</span>
+    <button id="nextPage">→</button>
+  </div>
+
+  <h1>🌸さくらアリの効果音ツール🌸</h1>
+  <div id="buttonGrid"></div>
+
+  <div id="editToggleContainer">
+    <button id="editToggleBtn">編集</button>
+  </div>
+
+  <div id="editPanel">
+    <h2>編集パネル</h2>
+    <div id="noSelectionMsg">編集するボタンを選んでください</div>
+    <label for="editLabel">ボタン名</label>
+    <input type="text" id="editLabel" placeholder="名前を入力" disabled />
+    <label for="editColor">色を変更</label>
+    <input type="color" id="editColor" disabled />
+    <label for="editFile">音声ファイル</label>
+    <input type="file" id="editFile" accept="audio/*" disabled />
+    <label for="editVolume">音量</label>
+    <div class="volume-control">
+      <button id="volDown" disabled>−</button>
+      <input type="range" id="editVolume" min="0" max="1" step="0.01" value="1" disabled />
+      <button id="volUp" disabled>＋</button>
+    </div>
+  </div>
+
+  <div class="bottomControl" id="controlGroup">
+    <button id="addButton">＋ ボタン追加</button>
+    <div id="sizeControlContainer">
+      <label id="sizeLabel">ボタンサイズ調整</label>
+      <input type="range" id="sizeSlider" min="50" max="150" value="100" />
+    </div>
+    <button id="saveButton">💾 保存</button>
+    <button id="resetButton">🔄 初期化</button>
+    <button id="backupButton">📤 バックアップ</button>
+    <button id="restoreButton">📥 復元</button>
+    <button id="repostButton">🔁 リポスト</button>
+    <button id="closeControls">✖ 閉じる</button>
+  </div>
+
+  <script>
+    // ---------- state ----------
+    let currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
+    let soundData = loadPageData(currentPage);
+    let buttonScale = parseInt(localStorage.getItem('buttonScale')) || 100;
+
+    // ---------- IndexedDB 初期化 & ヘルパ ----------
+    let db = null;
+    let dbReadyResolve;
+    const dbReadyPromise = new Promise((res) => { dbReadyResolve = res; });
+
+    const openReq = indexedDB.open("SakuraSoundDB", 1);
+    openReq.onupgradeneeded = function(e) {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("sounds")) {
+        db.createObjectStore("sounds");
+      }
+    };
+    openReq.onsuccess = function(e) {
+      db = e.target.result;
+      dbReadyResolve();
+    };
+    openReq.onerror = function() {
+      console.error("IndexedDB error", openReq.error);
+      alert("IndexedDB の初期化に失敗しました。音声の保存・復元に失敗する可能性があります。");
+      dbReadyResolve(); // resolve anyway so app doesn't hang
+    };
+
+    function putToDB(key, blob) {
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = db.transaction("sounds", "readwrite");
+          const store = tx.objectStore("sounds");
+          const req = store.put(blob, key);
+          req.onsuccess = () => resolve();
+          req.onerror = (e) => reject(e);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+    function getFromDB(key) {
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction("sounds", "readonly");
+          const store = tx.objectStore("sounds");
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        } catch (err) {
+          resolve(null);
+        }
+      });
+    }
+    function getAllDBEntries() {
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = db.transaction("sounds", "readonly");
+          const store = tx.objectStore("sounds");
+          const req = store.openCursor();
+          const all = {};
+          req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              all[cursor.key] = cursor.value;
+              cursor.continue();
+            } else {
+              resolve(all);
+            }
+          };
+          req.onerror = () => resolve(all);
+        } catch (err) {
+          resolve({});
+        }
+      });
+    }
+
+    // ---------- localStorageベースのページデータ読み書き（ページ数無制限） ----------
+    function pageKey(page) { return `soundData_page${page}`; }
+
+    function loadPageData(page){
+      try {
+        const raw = localStorage.getItem(pageKey(page));
+        if(!raw) {
+          // デフォルト12個（従来仕様）
+          return Array.from({length:12},()=>({label:'効果音',data:'',color:'#ffccdd',volume:1}));
+        }
+        return JSON.parse(raw);
+      } catch(e) {
+        console.error(e);
+        return Array.from({length:12},()=>({label:'効果音',data:'',color:'#ffccdd',volume:1}));
+      }
+    }
+    function savePageData(page,data){ localStorage.setItem(pageKey(page), JSON.stringify(data)); }
+
+    // ---------- DOM 要素 ----------
+    const buttonGrid=document.getElementById('buttonGrid');
+    const editToggleBtn=document.getElementById('editToggleBtn');
+    const editPanel=document.getElementById('editPanel');
+    const controlGroup=document.getElementById('controlGroup');
+    const closeControls=document.getElementById('closeControls');
+    const addButton=document.getElementById('addButton');
+    const saveButton=document.getElementById('saveButton');
+    const resetButton=document.getElementById('resetButton');
+    const backupButton=document.getElementById('backupButton');
+    const restoreButton=document.getElementById('restoreButton');
+    const repostButton=document.getElementById('repostButton');
+    const editLabel=document.getElementById('editLabel');
+    const editColor=document.getElementById('editColor');
+    const editFile=document.getElementById('editFile');
+    const editVolume=document.getElementById('editVolume');
+    const volUp=document.getElementById('volUp');
+    const volDown=document.getElementById('volDown');
+    const noSelectionMsg=document.getElementById('noSelectionMsg');
+    const sizeSlider=document.getElementById('sizeSlider');
+    const prevPageBtn=document.getElementById('prevPage');
+    const nextPageBtn=document.getElementById('nextPage');
+    const pageIndicator=document.getElementById('pageIndicator');
+
+    let isEditMode=false;
+    let selectedIndex=null;
+
+    // ---------- 再生（IndexedDB から取得） ----------
+    async function playSound(index){
+      const item=soundData[index];
+      if(!item.data){ alert('音声ファイルが設定されていません。'); return; }
+
+      // item.data は DB のキー
+      await dbReadyPromise;
+      const file = await getFromDB(item.data);
+      if(!file){ alert('音声データが見つかりません。'); return; }
+
+      const url = URL.createObjectURL(file);
+      const audio=new Audio(url);
+      audio.volume=item.volume||1;
+      audio.play();
+      // URL.revokeObjectURL を audio 終了後にするのがベターだが、簡潔のため省略
+    }
+
+    // ---------- UI: ボタン描画 ----------
+    function renderButtons(){
+      buttonGrid.innerHTML='';
+      soundData.forEach((item,index)=>{
+        const wrap=document.createElement('div');
+        wrap.className='btn-wrap';
+        const btn=document.createElement('button');
+        btn.className='sound-button';
+        btn.textContent=item.label||'効果音\n(割り当て)';
+        btn.style.backgroundColor=item.color;
+
+        btn.onclick=()=>{
+          playSound(index);
+          if(isEditMode) selectButton(index);
+        };
+
+        const del=document.createElement('button');
+        del.className='remove-btn';
+        del.textContent='✖';
+        del.onclick=(e)=>{
+          e.stopPropagation();
+          if(confirm('削除しますか？')){
+            // 削除：配列から削除して保存（DB内の音は残す or 取り除くかは選択）
+            soundData.splice(index,1);
+            savePageData(currentPage,soundData);
+            clearSelection();
+            renderButtons();
+          }
+        };
+        del.style.display=isEditMode?'inline-block':'none';
+
+        wrap.append(btn,del);
+        buttonGrid.append(wrap);
+      });
+      buttonGrid.style.transform=`scale(${buttonScale/100})`;
+      pageIndicator.textContent=currentPage;
+      prevPageBtn.disabled=currentPage===1;
+      // nextPageBtn は常に有効（ページは自動作成可能）
+    }
+
+    // ---------- 選択 / 編集状態 ----------
+    function selectButton(i){
+      selectedIndex=i;
+      const item=soundData[i];
+      editLabel.value=item.label;
+      editColor.value=item.color;
+      editVolume.value=item.volume;
+      [editLabel,editColor,editFile,editVolume,volUp,volDown].forEach(e=>e.disabled=false);
+      noSelectionMsg.style.display='none';
+    }
+    function clearSelection(){
+      selectedIndex=null;
+      noSelectionMsg.style.display='block';
+      [editLabel,editColor,editFile,editVolume,volUp,volDown].forEach(e=>e.disabled=true);
+    }
+
+    // ---------- 入力イベント ----------
+    editLabel.oninput=()=>{if(selectedIndex!=null){soundData[selectedIndex].label=editLabel.value;savePageData(currentPage,soundData);renderButtons();}};
+    editColor.oninput=()=>{if(selectedIndex!=null){soundData[selectedIndex].color=editColor.value;savePageData(currentPage,soundData);renderButtons();}};
+    editVolume.oninput=()=>{if(selectedIndex!=null){soundData[selectedIndex].volume=parseFloat(editVolume.value);savePageData(currentPage,soundData);}};
+    volUp.onclick=()=>{if(selectedIndex!=null){editVolume.value=Math.min(1,parseFloat(editVolume.value)+0.05);editVolume.oninput();}};
+    volDown.onclick=()=>{if(selectedIndex!=null){editVolume.value=Math.max(0,parseFloat(editVolume.value)-0.05);editVolume.oninput();}};
+
+    // ---------- 音声ファイル選択：IndexedDB に保存する（DataURLは保存しない） ----------
+    editFile.onchange = async () => {
+      if (selectedIndex != null && editFile.files[0]) {
+        await dbReadyPromise;
+        const file = editFile.files[0];
+        // DBキーは pageX_btnY 形式
+        const id = `page${currentPage}_btn${selectedIndex}`;
+        try {
+          await putToDB(id, file);
+          soundData[selectedIndex].data = id; // DB のキーだけを保存
+          savePageData(currentPage, soundData);
+          alert("音声を保存しました！");
+          renderButtons();
+        } catch (err) {
+          console.error(err);
+          alert("音声の保存に失敗しました。");
+        }
+      }
+    };
+
+    // ---------- 編集モードの切替 ----------
+    editToggleBtn.onclick=()=>{
+      isEditMode=!isEditMode;
+      editPanel.style.display=isEditMode?'block':'none';
+      controlGroup.style.display=isEditMode?'flex':'none';
+      editToggleBtn.style.display=isEditMode?'none':'block';
+      if(!isEditMode)clearSelection();
+      renderButtons();
+    };
+
+    closeControls.onclick=()=>{
+      isEditMode=false;
+      editPanel.style.display='none';
+      controlGroup.style.display='none';
+      editToggleBtn.style.display='block';
+      clearSelection();
+      renderButtons();
+    };
+
+    addButton.onclick=()=>{
+      soundData.push({label:'',data:'',color:'#ffccdd',volume:1});
+      savePageData(currentPage,soundData);
+      renderButtons();
+    };
+    sizeSlider.oninput=()=>{buttonScale=parseInt(sizeSlider.value);localStorage.setItem('buttonScale',buttonScale);renderButtons();};
+    saveButton.onclick=()=>{savePageData(currentPage,soundData);alert('保存しました！');};
+
+    resetButton.onclick=()=>{
+      if(confirm(`${currentPage}ページ目だけ初期化しますか？`)){
+        localStorage.removeItem(pageKey(currentPage));
+        soundData=loadPageData(currentPage);
+        savePageData(currentPage,soundData);
+        clearSelection();
+        renderButtons();
+        alert(`${currentPage}ページ目を初期化しました！`);
+      }
+    };
+
+    repostButton.onclick=()=>{window.open("https://x.com/ari_sakura_x/status/1981206157789430051?s=61&t=bCZeaav0J1tJp_6k415_yQ","_blank");};
+
+    // ---------- ページ移動（無制限） ----------
+    prevPageBtn.onclick=()=>{
+      if(currentPage>1){
+        currentPage--;
+        localStorage.setItem('currentPage',currentPage);
+        soundData=loadPageData(currentPage);
+        clearSelection();
+        renderButtons();
+      }
+    };
+    nextPageBtn.onclick=()=>{
+      currentPage++;
+      localStorage.setItem('currentPage',currentPage);
+      // 新しいページがなければ loadPageData がデフォルトを返す
+      soundData=loadPageData(currentPage);
+      clearSelection();
+      renderButtons();
+    };
+
+    // ---------- バックアップ（localStorage + IndexedDB の音声を DataURL に変換して JSON 出力） ----------
+    async function blobToDataURL(blob) {
+      return new Promise((res,rej)=>{
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej();
+        r.readAsDataURL(blob);
+      });
+    }
+
+    backupButton.onclick = async () => {
+      await dbReadyPromise;
+      try {
+        // 全ページキーを収集（soundData_page*）
+        const backup = {};
+        // save localStorage raw (other keys like currentPage/buttonScale included)
+        // We'll include all soundData_page* entries
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          if (key.startsWith('soundData_page')) {
+            try {
+              const arr = JSON.parse(localStorage.getItem(key));
+              // clone and replace data ids with dataURL blobs
+              const clone = JSON.parse(JSON.stringify(arr));
+              for (let j = 0; j < clone.length; j++) {
+                const d = clone[j].data;
+                if (typeof d === 'string' && d.startsWith('page')) {
+                  const blob = await getFromDB(d);
+                  if (blob) {
+                    try {
+                      const dataUrl = await blobToDataURL(blob);
+                      clone[j].data = dataUrl; // embed actual audio data
+                    } catch (e) {
+                      clone[j].data = ''; // fallback
+                    }
+                  } else {
+                    clone[j].data = ''; // DB missing
+                  }
+                }
+              }
+              backup[key] = clone;
+            } catch (e) {
+              backup[key] = localStorage.getItem(key);
+            }
+          } else if (key === 'buttonScale' || key === 'currentPage') {
+            backup[key] = localStorage.getItem(key);
+          }
+        }
+
+        // Also include any remaining DB entries that are not referenced (optional)
+        // We'll not include separately to avoid duplication.
+
+        const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "soundTool_backup.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("バックアップファイルを作成しました！");
+      } catch (err) {
+        console.error(err);
+        alert("バックアップに失敗しました。");
+      }
+    };
+
+    // ---------- 復元（バックアップファイルを読み、音声は IndexedDB に保存して localStorage を復元） ----------
+    restoreButton.onclick = async () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const data = JSON.parse(reader.result);
+            await dbReadyPromise;
+            // For each soundData_page key provided
+            for (const key of Object.keys(data)) {
+              if (key.startsWith('soundData_page')) {
+                const arr = data[key];
+                // For each item, if data is dataURL, convert to blob and save into DB with standardized ID
+                for (let i=0;i<arr.length;i++){
+                  const item = arr[i];
+                  if (item && typeof item.data === 'string' && item.data.startsWith('data:')) {
+                    // convert to blob
+                    const res = await fetch(item.data);
+                    const blob = await res.blob();
+                    const pageNum = parseInt(key.replace('soundData_page','')) || 1;
+                    const id = `page${pageNum}_btn${i}`;
+                    try {
+                      await putToDB(id, blob);
+                      item.data = id; // store DB key in item
+                    } catch (err) {
+                      console.error("DB put failed", err);
+                      item.data = ''; // fallback
+                    }
+                  }
+                }
+                // Save page to localStorage (stringify)
+                localStorage.setItem(key, JSON.stringify(arr));
+              } else if (key === 'buttonScale' || key === 'currentPage') {
+                localStorage.setItem(key, data[key]);
+              } else {
+                // ignore other keys
+              }
+            }
+            alert("データを復元しました。ページを再読み込みしてください。");
+          } catch (err) {
+            console.error(err);
+            alert("復元に失敗しました。ファイル形式を確認してください。");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    };
+
+    // ---------- 初期描画 ----------
+    function initializeUI() {
+      // ensure current page exists in storage (no-op if exists)
+      if (!localStorage.getItem(pageKey(currentPage))) {
+        savePageData(currentPage, loadPageData(currentPage));
+      }
+      sizeSlider.value = buttonScale;
+      renderButtons();
+    }
+
+    // Wait DB ready but don't block UI
+    dbReadyPromise.then(()=>{ initializeUI(); });
+
+    // If DB never ready, still initialize after short delay
+    setTimeout(()=>{ if(!db) initializeUI(); }, 500);
+
+  </script>
+
+  <h5>右上編集 → ボタン選択 → 画面下設定変更 → 保存して閉じる</h5>
+</body>
+</html>
+
