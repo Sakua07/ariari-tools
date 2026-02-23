@@ -1,0 +1,154 @@
+ <!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>配信用シンプルカウンターPRO</title>
+<style>
+body{font-family:sans-serif;background:#eef1f7;margin:0;padding:20px;}
+.topBar{display:flex;justify-content:space-between;margin-bottom:15px;}
+.sizeControl button,.dbControl button{padding:6px 10px;margin-left:5px;}
+
+.container{display:flex;flex-wrap:wrap;gap:15px;justify-content:center;}
+
+.counterBox,.addBox{
+  background:white;border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  width:190px;padding:15px;text-align:center;
+}
+
+.addBox{display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;background:#dfe6f5;}
+.titleRow{display:flex;justify-content:center;align-items:center;gap:8px;font-weight:bold;}
+.editBtn{font-size:12px;padding:3px 6px;cursor:pointer;}
+.count{font-size:30px;margin:12px 0;}
+.btnRow{display:flex;justify-content:center;gap:12px;margin:10px 0;}
+
+.bigBtn{
+  font-size:30px;width:75px;height:75px;border:none;border-radius:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+
+.minus{background:#f44336;color:white;}
+.plus{background:#2196F3;color:white;}
+
+.reset{
+  background:#777;color:white;margin-top:6px;width:100%;
+  padding:6px;border:none;border-radius:8px;cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="topBar">
+  <div class="sizeControl">
+    画面表示  
+    <button onclick="zoomIn()">＋</button>
+    <button onclick="zoomOut()">－</button>
+  </div>
+
+  <div class="dbControl">
+    <button onclick="saveToFile()">バックアップ</button>
+    <button onclick="loadFromFile()">復元</button>
+    <input type="file" id="fileLoader" style="display:none">
+  </div>
+</div>
+
+<div class="container" id="container"></div>
+
+<script>
+let nextNumber=1;
+let zoomLevel=1;
+
+function zoomIn(){ zoomLevel+=0.1; document.body.style.zoom=zoomLevel; }
+function zoomOut(){ zoomLevel-=0.1; if(zoomLevel<0.5) zoomLevel=0.5; document.body.style.zoom=zoomLevel; }
+
+/* 長押し連打 */
+function holdAction(button, action){
+  let holdTimer, repeatTimer;
+  const start=()=>{ action(); holdTimer=setTimeout(()=>{ repeatTimer=setInterval(action,80); },400); };
+  const stop=()=>{ clearTimeout(holdTimer); clearInterval(repeatTimer); };
+  button.addEventListener("mousedown",start);
+  button.addEventListener("touchstart",start);
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>button.addEventListener(ev,stop));
+}
+
+function createCounter(title,count=0){
+  const box=document.createElement("div");
+  box.className="counterBox";
+
+  box.innerHTML=`
+    <div class="titleRow">
+      <span class="title">${title}</span>
+      <button class="editBtn" onclick="editTitle(this)">編集</button>
+    </div>
+    <div class="count">${count}</div>
+    <div class="btnRow">
+      <button class="bigBtn minus">－</button>
+      <button class="bigBtn plus">＋</button>
+    </div>
+    <button class="reset">リセット</button>
+  `;
+
+  const countEl=box.querySelector(".count");
+  let value=parseInt(count);
+
+  holdAction(box.querySelector(".plus"),()=>{value++;countEl.textContent=value;});
+  holdAction(box.querySelector(".minus"),()=>{value--;countEl.textContent=value;});
+  box.querySelector(".reset").onclick=()=>{value=0;countEl.textContent=0;};
+
+  document.getElementById("container").insertBefore(box,document.getElementById("addBox"));
+}
+
+function editTitle(el){
+  const titleEl=el.parentElement.querySelector(".title");
+  const newName=prompt("新しい名前",titleEl.textContent);
+  if(newName) titleEl.textContent=newName;
+}
+
+function addNewBox(){ createCounter(nextNumber++); }
+
+/* 初期6個 */
+for(let i=1;i<=6;i++){createCounter(i);nextNumber=7;}
+
+const addBox=document.createElement("div");
+addBox.className="addBox";
+addBox.id="addBox";
+addBox.textContent="＋";
+addBox.onclick=addNewBox;
+document.getElementById("container").appendChild(addBox);
+
+
+
+// 💾 ファイル保存
+function saveToFile(){
+  const boxes=[...document.querySelectorAll(".counterBox")];
+  const data=boxes.map(b=>({
+    title:b.querySelector(".title").textContent,
+    count:b.querySelector(".count").textContent
+  }));
+
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="counter_backup.json";
+  a.click();
+}
+
+// 📂 ファイル読み込み
+function loadFromFile(){
+  document.getElementById("fileLoader").click();
+}
+
+document.getElementById("fileLoader").addEventListener("change",e=>{
+  const file=e.target.files[0];
+  const reader=new FileReader();
+  reader.onload=function(event){
+    const data=JSON.parse(event.target.result);
+    document.querySelectorAll(".counterBox").forEach(e=>e.remove());
+    data.forEach(d=>createCounter(d.title,d.count));
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
+
