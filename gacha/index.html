@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🌸 梱包ガチャツール！</title>
+<style>
+  body{background:#fff0f5;color:#333;font-family:system-ui,"Noto Sans JP",sans-serif;margin:0;padding:16px}
+  h1{margin:0 0 8px;}
+  .card{background:#ffe4f0;border:1px solid #ffb6c1;border-radius:14px;padding:14px;margin-bottom:12px}
+  input,select,button{font-size:15px}
+  input[type="text"],input[type="number"],select{
+    width:100%;max-width:250px;padding:6px 8px;
+    border-radius:8px;border:1px solid #ffb6c1;background:#fff;color:#333;margin-bottom:8px
+  }
+  input::placeholder{color:#aaa}
+  button{border:0;border-radius:8px;padding:8px 12px;background:#ff69b4;color:#fff;font-weight:700;cursor:pointer}
+  button.secondary{background:#ffb6c1;color:#fff}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .pill{padding:2px 6px;border-radius:999px;font-weight:700;font-size:13px}
+  .N{background:#ddd;color:#555}
+  .R{background:#d0f0d0;color:#228b22}
+  .SR{background:#d0e0ff;color:#1e90ff}
+  .SSR{background:#f0d0ff;color:#ba55d3}
+  .UR{background:#ffe4b5;color:#ff8c00}
+  .LR{background:#ffc0cb;color:#b22222}
+  .results, .history-list{display:grid;gap:8px}
+  .item{background:#fff;border:1px solid #ffb6c1;border-radius:10px;padding:6px 8px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .msg{font-size:15px;flex:1;text-align:center}
+  .count{color:#aaa;font-size:14px}
+  .flex-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .flex-row > *{flex:1}
+  .repost-btn{background:#ff69b4;color:#fff;font-weight:700;border-radius:8px;padding:4px 8px;cursor:pointer;}
+  #alertModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:999;display:none;}
+  #alertContent{background:#ffe4f0;padding:20px;border-radius:14px;text-align:center;max-width:320px;max-height:80%;overflow-y:auto;}
+  #alertContent p{margin-bottom:16px;}
+  #closeAlertBtn{background:#ff69b4;color:#fff;font-weight:700;border-radius:8px;padding:6px 8px;margin-top:8px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="card" id="welcomeCard">
+  <p>アリアリツールへようこそ！<br>
+  いいねとリポストで応援してね！<br>
+  じゃないとさくらアリが拗ねちゃうよ</p>
+  <button class="repost-btn" id="welcomeRepostBtn">リポストする</button>
+</div>
+<h5>🌸 困った時はアリの手も借りたい〜🐜</h5>
+<h1>🌸 URL保存機能付きガチャツール！</h1>
+<h5>🐝ガチャの中身を入れて追加ボタンを押したら保存されるよ！</h5>
+<h5>🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！</h5>
+<h5>🐝ガチャを引いた後にURLを入れてももう一度一覧表示ボタンを押せば履歴コピーに反映されるよ！</h5>
+
+<div class="card">
+  <h2>ガチャ内容追加</h2>
+  <div class="flex-row">
+    <select id="addRarity">
+      <option value="N">N</option>
+      <option value="R">R</option>
+      <option value="SR">SR</option>
+      <option value="SSR">SSR</option>
+      <option value="UR">UR</option>
+      <option value="LR">LR</option>
+    </select>
+    <input id="addText" type="text" placeholder="ガチャ内容" />
+    <input id="addLink" type="text" placeholder="リンク（Xには共有しません）" />
+    <button id="addBtn">追加</button>
+  </div>
+  <div class="flex-row">
+    <label>確率（Nは自動計算）</label>
+    <input id="probR" type="number" min="0" max="100" value="10"/> R
+    <input id="probSR" type="number" min="0" max="100" value="5"/> SR
+    <input id="probSSR" type="number" min="0" max="100" value="2"/> SSR
+    <input id="probUR" type="number" min="0" max="100" value="1"/> UR
+    <input id="probLR" type="number" min="0" max="100" value="0.1"/> LR
+  </div>
+  <div class="flex-row">
+    <button id="showItemsBtn" class="secondary">ガチャ内容一覧表示</button>
+    <button id="resetBtn" class="secondary">リセット</button>
+    <button id="backupBtn" class="secondary">バックアップ</button>
+    <button id="importBtn" class="secondary">インポート</button>
+  </div>
+</div>
+<div class="card">
+  <h2>ガチャ実行</h2>
+  <div class="flex-row">
+    <input id="playerName" type="text" placeholder="引く人の名前" />
+    <select id="nameSelect"><option value="">選択</option></select>
+    <input id="times" type="number" min="1" max="1000" placeholder="回数を入力"/>
+    <button id="rollBtn" style="flex:2;font-size:18px">回す</button>
+  </div>
+  <div class="flex-row">
+    <button id="roll1">1回</button>
+    <button id="roll10">10回</button>
+    <button id="clearBtn" class="secondary">結果リセット</button>
+    <button id="saveImageBtn" style="background:#ffb6c1">画像を保存</button>
+    <button id="shareBtn" style="background:#1d9bf0">Xで共有</button>
+    <button id="saveTextBtn" style="background:#ff69b4">文章保存</button>
+  </div>
+</div>
+<div class="card">
+  <h2>結果（新しい順／直近のみ）</h2>
+  <div id="results" class="results"></div>
+</div>
+<div class="card">
+  <h2>履歴（まとめ表示）</h2>
+  <div class="flex-row">
+    <select id="historyFilter"><option value="">全員</option></select>
+    <button id="showHistoryBtn">一覧表示</button>
+    <button id="copyAllBtn">コピー</button>
+  </div>
+  <div id="history" class="history-list"></div>
+</div>
+<div id="alertModal">
+  <div id="alertContent">
+    <p id="alertMessage">アリアリツールへようこそ！</p>
+    <div id="alertItems"></div>
+    <button id="closeAlertBtn">閉じる</button>
+  </div>
+</div>
+<script>
+/* ---------------------------------------------------------
+   IndexedDB セットアップ
+   --------------------------------------------------------- */
+let db;
+const DB_NAME = "gachaDB";
+const STORE_NAME = "gachaStore";
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onerror = e => reject(e);
+    req.onsuccess = e => {
+      db = e.target.result;
+      resolve(db);
+    };
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "key" });
+      }
+    };
+  });
+}
+function saveToDB(key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.put({ key, value });
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+function loadFromDB(key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result ? req.result.value : null);
+    req.onerror = reject;
+  });
+}
+/* ---------------------------------------------------------
+   （ DB 化）
+   --------------------------------------------------------- */
+let ITEMS = [], history = [], playerNames = [], historyPlayers = [];
+const historyEl = document.getElementById("history");
+/* DB から読み込み */
+async function loadData() {
+  await openDB();
+  ITEMS = (await loadFromDB("gacha_ITEMS")) || [];
+  history = (await loadFromDB("gacha_history")) || [];
+  playerNames = (await loadFromDB("gacha_playerNames")) || [];
+  historyPlayers = (await loadFromDB("gacha_historyPlayers")) || [];
+  playerNames.forEach(n => {
+    let o = document.createElement("option");
+    o.value = n; o.textContent = n;
+    nameSelect.appendChild(o);
+  });
+  historyPlayers.forEach(n => {
+    let o = document.createElement("option");
+    o.value = n; o.textContent = n;
+    historyFilter.appendChild(o);
+  });
+  if (history.length > 0) showHistory();
+}
+/* データリセット */
+async function resetData() {
+  if (confirm("ガチャ内容・履歴をすべてリセットしますか？")) {
+    ITEMS = []; history = []; playerNames = []; historyPlayers = [];
+    await saveToDB("gacha_ITEMS", ITEMS);
+    await saveToDB("gacha_history", history);
+    await saveToDB("gacha_playerNames", playerNames);
+    await saveToDB("gacha_historyPlayers", historyPlayers);
+    nameSelect.innerHTML='<option value="">選択</option>';
+    historyFilter.innerHTML='<option value="">全員</option>';
+    results.innerHTML=""; historyEl.innerHTML="";
+    alert("リセットしました！");
+  }
+}
+resetBtn.onclick = resetData;
+window.addEventListener('load', async () => {
+  alertModal.style.display='flex';
+  alertMessage.innerHTML="アリアリツールへようこそ！<br>いいねとリポストで応援してね！";
+  await loadData();
+});
+closeAlertBtn.onclick = ()=>{alertModal.style.display='none';};
+/* ■ ガチャ内容追加（DB 保存） */
+addBtn.onclick = async () => {
+  let rarity = addRarity.value,
+      text = addText.value.trim(),
+      link = addLink.value.trim();
+  if (!text) { alert("内容を入力してください"); return; }
+  ITEMS.push({ rarity, text, link });
+  await saveToDB("gacha_ITEMS", ITEMS);
+  addText.value = ""; addLink.value = ""; addRarity.value = "N";
+  alert("追加しました！（IndexedDB に保存済）");
+};
+/* 以下、既存コードは動作変更なし（保存部分のみ DB 化） */
+function renderItemsInAlert(){
+  alertItems.innerHTML="";
+  if(ITEMS.length===0){alertItems.innerHTML="<p>ガチャ内容がありません</p>";}
+  else ITEMS.forEach((it,i)=>{
+    let div=document.createElement("div");
+    div.className="item";
+    div.innerHTML=`<span class="pill ${it.rarity}">${it.rarity}</span>
+      <span class="msg">${it.text}${it.link?' ('+it.link+')':''}</span>
+      <button onclick="editItem(${i})">編集</button>
+      <button onclick="deleteItem(${i})">削除</button>`;
+    alertItems.appendChild(div);
+  });
+  alertModal.style.display="flex";
+}
+showItemsBtn.onclick=()=>{renderItemsInAlert();};
+async function editItem(i){
+  let it=ITEMS[i],r=prompt("レア度:",it.rarity);if(r===null)return;
+  r=r.toUpperCase();if(!["N","R","SR","SSR","UR","LR"].includes(r)){alert("無効なレア度");return;}
+  let t=prompt("内容:",it.text);if(t===null)return;
+  let l=prompt("リンク:",it.link);if(l===null)return;
+  ITEMS[i]={rarity:r,text:t.trim(),link:l.trim()};
+  await saveToDB("gacha_ITEMS", ITEMS);
+  renderItemsInAlert();
+}
+async function deleteItem(i){
+  if(confirm("削除しますか？")){
+    ITEMS.splice(i,1);
+    await saveToDB("gacha_ITEMS", ITEMS);
+    renderItemsInAlert();
+  }
+}
+/* 名前登録関連も DB 保存 */
+playerName.addEventListener('change', async ()=>{
+  let val=playerName.value.trim();
+  if(val&&!playerNames.includes(val)&&playerNames.length<30){
+    playerNames.push(val);
+    let o=document.createElement('option');
+    o.value=val;o.textContent=val;
+    nameSelect.appendChild(o);
+  }
+  if(val&&!historyPlayers.includes(val)){
+    historyPlayers.push(val);
+    let o=document.createElement('option');
+    o.value=val;o.textContent=val;
+    historyFilter.appendChild(o);
+  }
+  await saveToDB("gacha_playerNames", playerNames);
+  await saveToDB("gacha_historyPlayers", historyPlayers);
+});
+nameSelect.addEventListener('change',()=>{
+  playerName.value=nameSelect.value;
+  historyFilter.value=nameSelect.value;
+  showHistory();
+});
+/* ガチャ処理（元のまま） */
+function buildProbTable(){
+  let pr=parseFloat(probR.value)||0,psr=parseFloat(probSR.value)||0,
+      pssr=parseFloat(probSSR.value)||0,pur=parseFloat(probUR.value)||0,
+      plr=parseFloat(probLR.value)||0;
+  let sum=pr+psr+pssr+pur+plr;
+  return {N:100-sum,R:pr,SR:psr,SSR:pssr,UR:pur,LR:plr};
+}
+function rollOnce(){
+  if(ITEMS.length===0) return null; // alertは削除して単純に null を返す
+  let p=buildProbTable(),rand=Math.random()*100,acc=0,r="N";
+  for(let k of ["R","SR","SSR","UR","LR","N"]){acc+=p[k];if(rand<acc){r=k;break;}}
+  let c=ITEMS.filter(it=>it.rarity===r);if(c.length===0)c=ITEMS;
+  return c[Math.floor(Math.random()*c.length)];
+}
+function roll(times){
+  if(ITEMS.length === 0) { 
+    alert("ガチャ内容がありません"); 
+    return; // ITEMSが空なら一回だけアラートを出して処理中止
+  }
+  let name=playerName.value.trim()||"名無し",arr=[];
+  for(let i=0;i<times;i++){
+    let r=rollOnce(); 
+    if(r) arr.push(r);
+  }
+  showResults(name,arr);
+  addHistory(name,arr);
+}
+function showResults(name,arr){
+  results.innerHTML="";
+  let counts={};
+  arr.forEach(r=>{counts[r.text+"|"+(r.link||"")]=(counts[r.text+"|"+(r.link||"")]|0)+1;});
+  let text=name+"\n";
+  for(let k in counts){
+    let [t]=k.split("|");
+    text+="・"+t+(counts[k]>1?" ×"+counts[k]:"")+"\n";
+  }
+  text+="#アリアリツール";
+  let div=document.createElement("div");
+  div.className="item";
+  div.innerHTML=`<span class="msg">${text.replace(/\n/g,"<br>")}</span>`;
+  results.append(div);
+}
+/* 履歴追加（DB 保存） */
+async function addHistory(name,arr){
+  arr.forEach(r=>{history.unshift({name,rarity:r.rarity,text:r.text});});
+  await saveToDB("gacha_history", history);
+}
+function showHistory(){
+  let f=historyFilter.value;
+  historyEl.innerHTML="";
+  let grouped={};
+  history.forEach(h=>{
+    if(!f||h.name===f){
+      let key=h.name+"|"+h.text;
+      grouped[key]=(grouped[key]||0)+1;
+    }
+  });
+  Object.keys(grouped).forEach(k=>{
+    let [name,text]=k.split("|");
+    let found=ITEMS.find(it=>it.text===text);
+    let link=found?found.link:"";
+    let div=document.createElement("div");
+    div.className="item";
+    div.innerHTML=`<span class="msg">${name}<br>・${text}${grouped[k]>1?" ×"+grouped[k]:""}${link?"<br><small>URL: "+link+"</small>":""}</span>`;
+    historyEl.appendChild(div);
+  });
+}
+showHistoryBtn.onclick=showHistory;
+/* コピーボタン（変更なし） */
+copyAllBtn.onclick=()=>{
+  const filter=historyFilter.value;
+  let grouped={};
+  history.forEach(h=>{
+    if(!filter||h.name===filter){
+      let key=h.name+"|"+h.text;
+      grouped[key]=(grouped[key]||0)+1;
+    }
+  });
+  let text="";
+  Object.entries(grouped).forEach(([k,c])=>{
+    let [n,t]=k.split("|");
+    let found=ITEMS.find(it=>it.text===t);
+    let l=found?found.link:"";
+    text+=`${n}\n・${t}${c>1?" ×"+c:""}${l?`\n  URL: ${l}`:""}\n`;
+  });
+  if(!text){alert("コピー対象がありません");return;}
+  navigator.clipboard.writeText(text).then(()=>alert("コピーしました！（最新URLも反映済）"));
+};
+clearBtn.onclick=()=>{results.innerHTML="";};
+rollBtn.onclick=()=>{let n=parseInt(times.value)||1;roll(n);};
+roll1.onclick=()=>roll(1);
+roll10.onclick=()=>roll(10);
+welcomeRepostBtn.onclick = () => {
+  window.open("https://x.com/ari_sakura_x/status/1980462132320956496?s=61", "_blank");
+};
+/* バックアップ・インポート（元のまま） */
+backupBtn.onclick = () => {
+  const data = {
+    ITEMS,
+    history,
+    playerNames,
+    historyPlayers
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "gacha_backup_" + new Date().toISOString().slice(0,19).replace(/[:T]/g,"-") + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+  alert("バックアップをダウンロードしました！");
+};
+importBtn.onclick = () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (confirm("現在のデータを上書きしてインポートしますか？")) {
+          ITEMS = data.ITEMS || [];
+          history = data.history || [];
+          playerNames = data.playerNames || [];
+          historyPlayers = data.historyPlayers || [];
+          await saveToDB("gacha_ITEMS", ITEMS);
+          await saveToDB("gacha_history", history);
+          await saveToDB("gacha_playerNames", playerNames);
+          await saveToDB("gacha_historyPlayers", historyPlayers);
+          alert("インポートが完了しました！ページを再読み込みします。");
+          location.reload();
+        }
+      } catch (err) {
+        alert("インポートに失敗しました。ファイルが正しい形式か確認してください。");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};
+/* 画像保存（元のまま） */
+saveImageBtn.onclick = async () => {
+  if (typeof html2canvas === "undefined") {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+    document.body.appendChild(script);
+    script.onload = () => saveImageBtn.click();
+    return;
+  }
+
+  // ←ここから変更
+  const target = document.getElementById("results");      // body → results
+  target.style.padding = "20px";                          // 一時的に余白確保
+  const canvas = await html2canvas(target, { scale: 2, backgroundColor: null });
+  target.style.padding = "";                               // 元に戻す
+  // ←ここまで変更
+
+  const link = document.createElement("a");
+  link.download = "gacha_result_" + new Date().toISOString().slice(0,19).replace(/[:T]/g,"-") + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  alert("画像を保存しました！");
+};
+/* X共有（元） */
+shareBtn.onclick = () => {
+  const latest = document.querySelector("#results .item .msg");
+  if (!latest) { alert("共有する結果がありません"); return; }
+  const text = latest.innerText + "\n#IRIAM";
+  const encoded = encodeURIComponent(text);
+  const url = "https://x.com/intent/tweet?text=" + encoded;
+  window.open(url, "_blank");
+};
+/* テキスト保存（元） */
+saveTextBtn.onclick = () => {
+  const latest = document.querySelector("#results .item .msg");
+  if (!latest) { alert("コピーする文章がありません"); return; }
+  const text = latest.innerText;
+  navigator.clipboard.writeText(text)
+    .then(() => alert("文章をコピーしました！"))
+    .catch(() => alert("コピーに失敗しました"));
+};
+</script>
+</body>
+</html>
+
