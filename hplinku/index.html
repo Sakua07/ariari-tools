@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>さくらアリのリンクページ</title>
+
+<style>
+body{
+    font-family: "M PLUS Rounded 1c", sans-serif;
+    background: linear-gradient(135deg,#ffdce8,#ffeef5);
+    text-align:center;
+    padding:40px 20px;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.1);
+}
+
+h1{
+    color:#ff6fa5;
+    margin-bottom:30px;
+}
+
+/* タイルグリッド */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr); /* 常に3列 */
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.grid-2{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:15px;
+    margin-top:10px;
+}
+
+/* タイルボタン */
+.tile{
+    padding:20px;
+    border-radius:20px;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+    background:#ff8fb7;
+    color:white;
+    transition:0.3s;
+}
+
+.tile:hover{
+    transform:scale(1.05);
+    opacity:0.9;
+}
+
+/* サブリンク */
+.sub-links{
+    margin-top:15px;
+    display:none;
+}
+
+.sub-button{
+    display:block;
+    margin:8px auto;
+    padding:10px;
+    width:70%;
+    border-radius:30px;
+    text-decoration:none;
+    font-size:14px;
+    background:#ffe0eb;
+    color:#ff4f8b;
+}
+
+.sub-button:hover{
+    transform:scale(1.05);
+    opacity:0.9;
+}
+</style>
+
+<script>
+function toggleSection(id){
+    const section = document.getElementById(id);
+    section.style.display = section.style.display === "block" ? "none" : "block";
+}
+</script>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>さくらアリ 🌸 Link</h1>
+
+<!-- 1行目 -->
+<div class="grid">
+
+<button class="tile" onclick="toggleSection('templates')">
+テンプレート
+</button>
+
+<button class="tile" onclick="toggleSection('tools')">
+ツール
+</button>
+
+<button class="tile" onclick="toggleSection('materials')">
+素材
+</button>
+
+</div>
+
+<!-- 2行目（中央だけ使用） -->
+<div class="grid-2">
+<div></div>
+
+<button class="tile" onclick="toggleSection('developer')">
+開発者ページ
+</button>
+
+<div></div>
+</div>
+
+<!-- 🍎 テンプレート -->
+<div id="templates" class="sub-links">
+
+<a class="sub-button" href="https://t.co/bN6KKvNmR4" target="_blank">① テンプレートを開く</a>
+<a class="sub-button" href="🍎ココにテンプレ②のURL" target="_blank">② テンプレートを開く</a>
+<a class="sub-button" href="🍎ココにテンプレ③のURL" target="_blank">③ テンプレートを開く</a>
+
+</div>
+
+<!-- 🍎 ツール -->
+<div id="tools" class="sub-links">
+
+<a class="sub-button" href="バナイベ開催検索＆早見表" target="_blank">①トップバナーチャレンジ開催時期検索ツール</a>
+<a class="sub-button" href="トークテーマルーレット＆番号検索" target="_blank">② トークテーマルーレット</a>
+<a class="sub-button" href="🌸 効果音プレイヤー 🌸" target="_blank">③効果音ツール</a>
+<a class="sub-button" href="定期カウント" target="_blank">④ 入室耐久定期カウントツール</a>
+<a class="sub-button" href="🌸 梱包ガチャツール！" target="_blank">⑤ガチャツール</a>
+
+<a class="sub-button" href="配信用シンプルカウンターPRO" target="_blank">⑥シンプルカウンターツール</a>
+
+<a class="sub-button" href="🍎" target="_blank">⑦ツール</a>
+
+<a class="sub-button" href="🍎" target="_blank">⑧ツール</a>
+
+<a class="sub-button" href="🍎" target="_blank">⑨ツール</a>
+
+<a class="sub-button" href="🍎" target="_blank">⑩ツール</a>
+
+
+
+
+</div>
+
+<!-- 🍎 素材 -->
+<div id="materials" class="sub-links">
+
+<a class="sub-button" href="🍎ココに素材サイト①のURL" target="_blank">① 素材サイトを開く</a>
+<a class="sub-button" href="🍎ココに素材サイト②のURL" target="_blank">② 素材サイトを開く</a>
+
+</div>
+
+<!-- 🍎 開発者 -->
+<div id="developer" class="sub-links">
+
+<a class="sub-button" href="qr.paps.jp/ux1Lu" target="_blank">
+開発者のIRIAMページを開く
+</a>
+
+<a class="sub-button" href="https://x.com/ari_sakura_x?s=21&t=bCZeaav0J1tJp_6k415_yQ" target="_blank">
+開発者のXへ
+</a>
+
+</div>
+
+</div>
+
+</body>
+</html>
+
