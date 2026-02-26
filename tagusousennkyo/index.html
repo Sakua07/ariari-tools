@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🏆タグ総選挙🏆</title>
+<style>
+  body {
+    font-family: "Hiragino Maru Gothic ProN", sans-serif;
+    background: linear-gradient(180deg, #fffafc, #ffe4ef);
+    text-align: center;
+    padding: 20px;
+  }
+  h1 {
+    color: #b33;
+    text-shadow: 1px 1px 2px #fff;
+  }
+
+  .sakura-section {
+    background: rgba(255, 230, 240, 0.8);
+    border: 2px solid #ff99bb;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(255,150,180,0.3);
+  }
+  .sakura-section h2 {
+    color: #e55a91;
+    margin: 0;
+  }
+
+  .howto {
+    font-size: 14px;
+    color: #b33;
+    background: rgba(255,245,250,0.8);
+    border: 1px solid #ffb6c1;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 10px;
+    display: inline-block;
+  }
+
+  /* ▼ ここに使い方追記済（🐦Xへポストの説明） ▼ */
+
+  #themeInput {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #b33;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  #themeTitle {
+    font-size: 22px;
+    color: #b33;
+    font-weight: bold;
+    margin: 15px 0;
+  }
+
+  #controls {
+    margin: 20px auto;
+  }
+  input[type="text"] {
+    padding: 5px;
+    border-radius: 6px;
+    border: 1px solid #b33;
+    margin: 3px;
+  }
+  button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    background-color: #b33;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #d44;
+  }
+
+  #pyramid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px auto;
+    position: relative;
+  }
+  .row {
+    display: flex;
+    justify-content: center;
+    margin: 5px 0;
+  }
+  .block {
+    background: #ffb380;
+    border: 2px solid #b33;
+    color: #fff;
+    font-weight: bold;
+    padding: 10px 15px 75px;
+    margin: 3px;
+    border-radius: 8px;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+    min-width: 140px;
+    position: relative;
+  }
+  .block span {
+    display: block;
+    font-size: 14px;
+  }
+
+  .rank-label {
+    font-weight: bold;
+    color: #b33;
+    margin-bottom: 3px;
+  }
+
+  .edit-area {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: calc(100% - 20px);
+  }
+  .edit-area .row-input {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  .edit-area input[type="number"], .edit-area input[type="text"] {
+    width: 60px;
+    padding: 4px;
+    border-radius: 4px;
+    border: 1px solid #b33;
+    font-size: 12px;
+    text-align: center;
+    background: #fff;
+    color: #000;
+  }
+  .edit-area .small-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+    background-color: #e55a91;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+
+  .name-edit-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #e55a91;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 10;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 240, 245, 0.85);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-content {
+    background: #fff;
+    border: 2px solid #ff99bb;
+    border-radius: 10px;
+    padding: 20px;
+    width: 85%;
+    max-width: 350px;
+    text-align: center;
+  }
+  .modal-content input {
+    width: 90%;
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  #pyramidImg {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: -1;
+    opacity: 0.15;
+    width: 90%;
+  }
+
+  #backupFileInput {
+    display: none;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="sakura-section">
+  <h2>🌸#アリアリツール🌸</h2>
+</div>
+
+<div class="howto">
+  🌸使い方：テーマ入力→項目追加→pt編集→編集で名前編集！<br>
+  ✨バックアップはJSONで保存・読み込みできます<br>
+  🐦Xへポスト：押すと画像自動DL＋投稿画面が開くよ！
+</div>
+
+<h1>🏆#タグ総選挙ピラミッド！🏆</h1>
+
+<input id="themeInput" type="text" placeholder="ランキングテーマを入力（例：好きなドリンク）" oninput="updateTheme()">
+<div id="themeTitle">テーマ未設定ランキング！</div>
+
+<div id="controls">
+  <input id="itemInput" type="text" placeholder="項目名を入力">
+  <button onclick="addItem()">追加</button>
+
+  <button onclick="share()">📤共有</button>
+
+  <!-- Xへポスト -->
+  <button onclick="postToX()">🐦Xへポスト</button>
+
+  <button onclick="downloadBackup()">💾バックアップ保存</button>
+  <button onclick="triggerBackupUpload()">📂バックアップ復元</button>
+  <input id="backupFileInput" type="file" accept=".json" onchange="handleBackupUpload(event)">
+</div>
+
+<div id="pyramid">
+  <img id="pyramidImg" src="https://cdn.pixabay.com/photo/2016/09/10/17/18/pyramid-1651631_1280.png" alt="pyramid">
+</div>
+
+<div id="nameModal" class="modal">
+  <div class="modal-content">
+    <h3>名前を編集</h3>
+    <input type="text" id="editNameInput" placeholder="新しい名前を入力">
+    <br>
+    <button onclick="saveName()">決定</button>
+    <button onclick="closeNameModal()" style="margin-left:8px;background:#b33;">キャンセル</button>
+  </div>
+</div>
+
+<div id="welcomeModal" class="modal">
+  <div class="modal-content">
+    <p>
+      #アリアリツールへようこそ！<br>
+      元ポストをいいねとリツで応援してから使ってね！<br>
+      たくさんの方が楽しんでくれたら嬉しい( ˶>ᴗ<˶)♪<br>
+      じゃないとさくらアリが拗ねちゃうよww
+    </p>
+    <button onclick="closeModal()">閉じる</button>
+    <button onclick="goToPost()">元ポストへ飛ぶ</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let items = []; 
+let editingIndex = null;
+let theme = "";
+
+/* ▼ 初期化：6個の空項目 */
+window.addEventListener("DOMContentLoaded", () => {
+  for(let i=1; i<=6; i++){
+    items.push({ name: `項目${i}`, points: 0 });
+  }
+  renderPyramid();
+});
+
+function updateTheme(){
+  theme = document.getElementById("themeInput").value.trim();
+  document.getElementById("themeTitle").textContent =
+    theme ? `${theme}ランキング！` : "テーマ未設定ランキング！";
+}
+
+function renderPyramid(){
+  const pyramid = document.getElementById("pyramid");
+  Array.from(pyramid.children).forEach(child=>{
+    if(child.id === 'pyramidImg') return;
+    pyramid.removeChild(child);
+  });
+
+  if(items.length === 0) return;
+
+  const sorted = [...items].map((v,i)=>({...v, index:i})).sort((a,b)=>b.points - a.points);
+  let idx=0, rowCount=1;
+  const ranks=["🥇1位✨","🥈2位","🥉3位","4位","5位","6位","7位","8位","9位","10位"];
+
+  while(idx < sorted.length){
+    const rankLabel = document.createElement("div");
+    rankLabel.className = "rank-label";
+    rankLabel.textContent = ranks[rowCount-1] || `${rowCount}位`;
+    pyramid.appendChild(rankLabel);
+
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "row";
+
+    for(let i=0;i<rowCount && idx<sorted.length;i++){
+      const p = sorted[idx];
+      const block = document.createElement("div");
+      block.className = "block";
+      block.innerHTML = `
+        ${escapeHtml(p.name)}
+        <span>${p.points}pt</span>
+      `;
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "name-edit-btn";
+      editBtn.textContent = "編集";
+      editBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        editingIndex = p.index;
+        document.getElementById("editNameInput").value = p.name;
+        document.getElementById("nameModal").style.display = "flex";
+      };
+      block.appendChild(editBtn);
+
+      const editArea = document.createElement("div");
+      editArea.className = "edit-area";
+
+      const rowOverwrite = document.createElement("div");
+      rowOverwrite.className = "row-input";
+
+      const overwriteLabel = document.createElement("div");
+      overwriteLabel.textContent = "pt";
+      overwriteLabel.style.fontSize = "12px";
+      overwriteLabel.style.color = "#fff";
+
+      const overwriteInput = document.createElement("input");
+      overwriteInput.type = "number";
+      overwriteInput.value = p.points;
+
+      const overwriteBtn = document.createElement("button");
+      overwriteBtn.className = "small-btn";
+      overwriteBtn.textContent = "決定";
+      overwriteBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        const val = parseInt(overwriteInput.value);
+        if (isNaN(val) || val < 0) return alert("正しい数値を入力してね！");
+        items[p.index].points = val;
+        renderPyramid();
+      };
+
+      rowOverwrite.appendChild(overwriteLabel);
+      rowOverwrite.appendChild(overwriteInput);
+      rowOverwrite.appendChild(overwriteBtn);
+
+      const rowAdd = document.createElement("div");
+      rowAdd.className = "row-input";
+
+      const addLabel = document.createElement("div");
+      addLabel.textContent = "pt追加";
+      addLabel.style.fontSize = "12px";
+      addLabel.style.color = "#fff";
+
+      const addInput = document.createElement("input");
+      addInput.type = "number";
+      addInput.value = 0;
+
+      const addBtn = document.createElement("button");
+      addBtn.className = "small-btn";
+      addBtn.textContent = "決定";
+      addBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        const val = parseInt(addInput.value);
+        if (isNaN(val)) return alert("正しい数値を入力してね！");
+        items[p.index].points += val;
+        renderPyramid();
+      };
+
+      rowAdd.appendChild(addLabel);
+      rowAdd.appendChild(addInput);
+      rowAdd.appendChild(addBtn);
+
+      editArea.appendChild(rowOverwrite);
+      editArea.appendChild(rowAdd);
+      block.appendChild(editArea);
+
+      rowDiv.appendChild(block);
+      idx++;
+    }
+    pyramid.appendChild(rowDiv);
+    rowCount++;
+  }
+}
+
+function addItem(){
+  const name = document.getElementById("itemInput").value.trim();
+  if(!name) return alert("項目名を入力してね！");
+  items.push({ name, points: 0 });
+  document.getElementById("itemInput").value = "";
+  renderPyramid();
+}
+
+function saveName(){
+  const newName = document.getElementById("editNameInput").value.trim();
+  if(!newName) return alert("名前を入力してね！");
+  items[editingIndex].name = newName;
+  document.getElementById("nameModal").style.display = "none";
+  renderPyramid();
+}
+function closeNameModal(){
+  document.getElementById("nameModal").style.display = "none";
+}
+
+async function share(){
+  const pyramid = document.getElementById("pyramid");
+  const canvas = await html2canvas(pyramid, { scale: 2, backgroundColor: null });
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], "ranking-pyramid.png", { type: "image/png" });
+    if(navigator.share){
+      await navigator.share({
+        title: `${theme || "みんなの"}ランキング！`,
+        text: `#アリアリツール #${theme || "みんなの"}ランキング 途中結果`,
+        files: [file]
+      });
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ranking-pyramid.png";
+      a.click();
+    }
+  });
+}
+
+/* ▼▼▼ PC対応版：Xへポスト ▼▼▼ */
+async function postToX(){
+  try {
+    const sorted = [...items].sort((a,b)=>b.points - a.points);
+    if(sorted.length < 3){
+      alert("3位まで項目を作ってね！");
+      return;
+    }
+
+    const t1 = sorted[0];
+    const t2 = sorted[1];
+    const t3 = sorted[2];
+
+    const text =
+`🥇 ${t1.name}  ${t1.points}pt
+🥈 ${t2.name}  ${t2.points}pt
+🥉 ${t3.name}  ${t3.points}pt
+#IRIAM #アリアリツール`;
+
+    /* ▼ 画像キャプチャ＆自動DL */
+    const pyramid = document.getElementById("pyramid");
+    const canvas = await html2canvas(pyramid, { scale: 2, backgroundColor: null });
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ranking-pyramid.png";
+    a.click();
+
+    /* ▼ X投稿画面を開く（PC対応） */
+    const tweetUrl =
+      "https://twitter.com/intent/tweet?text=" +
+      encodeURIComponent(text);
+
+    window.open(tweetUrl, "_blank");
+
+  } catch(err){
+    console.error(err);
+    alert("投稿でエラーが発生しました");
+  }
+}
+/* ▲▲▲ ここまで Xポスト ▲▲▲ */
+
+function downloadBackup(){
+  const data = { theme, items };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ranking-backup-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerBackupUpload(){
+  document.getElementById("backupFileInput").value = "";
+  document.getElementById("backupFileInput").click();
+}
+
+function handleBackupUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed || !Array.isArray(parsed.items)) throw new Error("不正なファイル形式です");
+      items = parsed.items.map(it=>({ name: it.name, points: it.points }));
+      theme = parsed.theme || "";
+      document.getElementById("themeInput").value = theme;
+      document.getElementById("themeTitle").textContent =
+        theme ? `${theme}ランキング！` : "テーマ未設定ランキング！";
+      renderPyramid();
+      alert("バックアップを復元しました！");
+    } catch(err) {
+      alert("復元に失敗しました： " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+window.onload = () => {
+  document.getElementById("welcomeModal").style.display = "flex";
+};
+function closeModal(){
+  document.getElementById("welcomeModal").style.display = "none";
+}
+function goToPost(){
+  window.open("https://twitter.com/your_post_url", "_blank");
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
+  }[s]));
+}
+function goToPost(){
+  window.open(
+    "https://x.com/ari_sakura_x/status/1993226275025306019",
+    "_blank"
+  );
+}
+
+
+</script>
+</body>
+</html>
