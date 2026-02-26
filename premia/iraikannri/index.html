@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>さくらアリの納期管理ツール</title>
+
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+body{font-family:'M PLUS Rounded 1c', sans-serif;background:#ffeef4;margin:0;padding:20px;}
+.container{max-width:1100px;margin:auto;background:white;padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+h1{text-align:center;color:#ff6fa5;font-weight:700;}
+.note{background:#fff4f8;padding:12px;border-radius:10px;font-size:14px;margin-bottom:15px;line-height:1.7;}
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px;}
+input,button{padding:8px 10px;border-radius:10px;border:1px solid #ddd;font-family:'M PLUS Rounded 1c', sans-serif;}
+button{background:#ff8fb5;color:white;border:none;cursor:pointer;font-weight:700;}
+button:hover{opacity:0.85;}
+
+#addBtn{background:#ff5c9e;font-size:15px;}
+
+#privacyBtn{background:white;color:#333;border:2px solid #333;}
+#privacyBtn.active{background:#111;color:white;border-color:#111;}
+
+#rankingToggleBtn.off{background:#ccc;color:#333;}
+
+#editNotice{
+display:none;
+background:#fff3cd;
+color:#b35c00;
+padding:12px;
+border-radius:12px;
+font-weight:700;
+text-align:center;
+margin-bottom:12px;
+box-shadow:0 3px 8px rgba(0,0,0,0.08);
+border:2px solid #ffd76a;
+}
+
+/* 登録フォームだけ軽く強調 */
+.register-box{
+background:#fff6fa;
+padding:15px;
+border-radius:15px;
+margin-bottom:15px;
+}
+
+.register-title{
+font-weight:700;
+color:#ff4f93;
+margin-bottom:8px;
+text-align:center;
+}
+
+.table-top{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.left-group{font-size:14px;}
+.right-group button{font-size:12px;margin-left:5px;}
+
+table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+th,td{padding:8px;text-align:center;border-bottom:1px solid #eee;font-size:14px;}
+th{background:#ffb6d0;font-weight:700;}
+tr.danger{background:#ffd6d6;}
+
+.hide{display:none;}
+
+.done-section{background:#fff8d9;padding:10px;border-radius:10px;margin-top:15px;}
+
+.ranking-section{background:#e8f9ff;padding:12px;border-radius:12px;margin-top:10px;}
+.ranking-item{padding:5px 0;border-bottom:1px dashed #ccc;font-size:14px;}
+
+.center{text-align:center;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>🌸さくらアリの納期管理ツール</h1>
+
+<div class="note">
+<b>■ 使い方</b><br>
+登録すると依頼一覧に表示されます。編集・削除可能。<br>
+納期が近いと色が変わります。<br><br>
+<b>■ 済ボタン</b>：完了リストへ移動します。<br>
+<b>■ 編集して再依頼</b>：フォームに反映され、再編集して登録できます。<br>
+<b>■ プライバシーモード</b>：名前とURLを非表示にします。<br>
+<b>■ バックアップ</b>：ブラウザ保存のため定期保存推奨。
+</div>
+
+<div class="controls">
+<button id="privacyBtn" onclick="togglePrivacy()">🔒 プライバシーモード</button>
+<button onclick="saveImage()">📸 一覧画像保存</button>
+<button onclick="backupData()">💾 バックアップ保存</button>
+<input type="file" onchange="restoreData(event)">
+</div>
+
+<div id="editNotice">🔄 再依頼モード：再編集して登録できます</div>
+
+<div class="register-box">
+<div class="register-title">📝 新規登録</div>
+<div class="controls">
+<input type="text" id="taskName" placeholder="名前">
+<input type="text" id="content" placeholder="内容">
+<input type="date" id="deadline">
+<input type="url" id="url" placeholder="URL(任意)">
+<button onclick="addTask()" id="addBtn">登録</button>
+</div>
+</div>
+
+<p>📋 依頼一覧（<span id="taskCount">0</span>件）</p>
+
+<div class="table-top">
+<div class="left-group">
+🎨 色変更日数：
+<input type="number" id="dangerDays" value="3" min="0" style="width:60px;"> 日以内
+</div>
+<div class="right-group">
+<button onclick="sortByDeadline()">納期が近い順</button>
+<button onclick="sortByCreated()">登録順</button>
+</div>
+</div>
+
+<table id="taskTable">
+<thead>
+<tr>
+<th>登録日</th>
+<th>納期</th>
+<th>残り日数</th>
+<th class="nameCol">名前</th>
+<th>内容</th>
+<th class="urlCol">URL</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="taskList"></tbody>
+</table>
+
+<p>🔍 検索: <input type="text" id="searchInput"></p>
+
+<div class="done-section">
+<h3>✅ 済一覧（<span id="doneCount">0</span>件）</h3>
+<table>
+<thead>
+<tr>
+<th>登録日</th>
+<th class="nameCol">名前</th>
+<th>内容</th>
+<th class="urlCol">URL</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="doneList"></tbody>
+</table>
+</div>
+
+<div class="center">
+<button id="rankingToggleBtn" onclick="toggleRankingView()">🏆 ランキング表示 ON</button>
+</div>
+
+<div id="rankingWrapper" class="ranking-section">
+<h3>商品ランキング（先頭4文字一致）</h3>
+<div id="rankingList"></div>
+</div>
+
+</div>
+
+<script>
+/* JSは完全保持（前回と同じ） */
+let tasks=JSON.parse(localStorage.getItem("tasks")||"[]");
+let privacy=false;
+let rankingVisible=true;
+let editModeId=null;
+
+const nameInput=document.getElementById("taskName");
+const contentInput=document.getElementById("content");
+const deadlineInput=document.getElementById("deadline");
+const urlInput=document.getElementById("url");
+const taskListEl=document.getElementById("taskList");
+const doneListEl=document.getElementById("doneList");
+const dangerInput=document.getElementById("dangerDays");
+const searchInput=document.getElementById("searchInput");
+const taskCountEl=document.getElementById("taskCount");
+const doneCountEl=document.getElementById("doneCount");
+const privacyBtn=document.getElementById("privacyBtn");
+const rankingEl=document.getElementById("rankingList");
+const rankingWrapper=document.getElementById("rankingWrapper");
+const rankingToggleBtn=document.getElementById("rankingToggleBtn");
+const editNotice=document.getElementById("editNotice");
+const addBtn=document.getElementById("addBtn");
+
+deadlineInput.valueAsDate=new Date();
+function todayStr(){return new Date().toISOString().split("T")[0];}
+function save(){localStorage.setItem("tasks",JSON.stringify(tasks));}
+
+function addTask(){
+if(!nameInput.value.trim()||!deadlineInput.value){alert("名前と納期は必須！");return;}
+if(editModeId){
+tasks=tasks.filter(t=>t.id!==editModeId);
+editModeId=null;
+editNotice.style.display="none";
+addBtn.textContent="登録";
+}
+tasks.unshift({id:Date.now(),name:nameInput.value,content:contentInput.value,deadline:deadlineInput.value,url:urlInput.value,created:todayStr(),done:false});
+nameInput.value=contentInput.value=urlInput.value="";
+deadlineInput.valueAsDate=new Date();
+save();render();
+}
+
+function editDoneTask(id){
+const t=tasks.find(x=>x.id===id);
+if(!t)return;
+nameInput.value=t.name;
+contentInput.value=t.content;
+deadlineInput.value=t.deadline;
+urlInput.value=t.url;
+editModeId=id;
+editNotice.style.display="block";
+addBtn.textContent="再登録";
+window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function markDone(id){tasks.find(t=>t.id===id).done=true;save();render();}
+function deleteTask(id){tasks=tasks.filter(t=>t.id!==id);save();render();}
+function duplicateTask(id){const t=tasks.find(x=>x.id===id);tasks.push({...t,id:Date.now(),done:false});save();render();}
+
+
+function editTask(id){
+const t=tasks.find(x=>x.id===id);
+if(!t)return;
+
+nameInput.value=t.name;
+contentInput.value=t.content;
+deadlineInput.value=t.deadline;
+urlInput.value=t.url;
+
+editModeId=id;
+editNotice.style.display="block";
+addBtn.textContent="再登録";
+
+window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function toggleRankingView(){
+rankingVisible=!rankingVisible;
+rankingWrapper.style.display=rankingVisible?"block":"none";
+rankingToggleBtn.textContent="🏆 ランキング表示 "+(rankingVisible?"ON":"OFF");
+rankingToggleBtn.classList.toggle("off",!rankingVisible);
+}
+
+function generateRanking(){
+let map={};
+tasks.forEach(t=>{
+if(!t.content||t.content.length<4)return;
+let key=t.content.substring(0,4);
+if(!map[key])map[key]={request:0,done:0};
+if(t.done)map[key].done++;else map[key].request++;
+});
+let arr=Object.entries(map).sort((a,b)=>(b[1].request+b[1].done)-(a[1].request+a[1].done));
+rankingEl.innerHTML="";
+arr.forEach((r,i)=>{
+rankingEl.innerHTML+=`<div class="ranking-item">${i+1}位：${r[0]}（依頼${r[1].request}件・済${r[1].done}件）</div>`;
+});
+}
+
+function daysLeft(date){return Math.ceil((new Date(date)-new Date())/(1000*60*60*24));}
+
+function render(){
+taskListEl.innerHTML="";doneListEl.innerHTML="";
+const danger=parseInt(dangerInput.value)||0;
+const keyword=searchInput.value.toLowerCase();
+
+tasks.forEach(t=>{
+if(!t.name.toLowerCase().includes(keyword)&&!t.content.toLowerCase().includes(keyword))return;
+if(t.done){
+doneListEl.innerHTML+=`<tr>
+<td>${t.created}</td>
+<td class="nameCol">${t.name}</td>
+<td>${t.content}</td>
+<td class="urlCol">${t.url?`<a href="${t.url}" target="_blank">開く</a>`:""}</td>
+<td>
+<button onclick="editDoneTask(${t.id})">編集して再依頼</button>
+<button onclick="deleteTask(${t.id})">削除</button>
+</td></tr>`;
+}else{
+const left=daysLeft(t.deadline);
+taskListEl.innerHTML+=`<tr class="${left<=danger?"danger":""}">
+<td>${t.created}</td>
+<td>${t.deadline}</td>
+<td>${left}</td>
+<td class="nameCol">${t.name}</td>
+<td>${t.content}</td>
+<td class="urlCol">${t.url?`<a href="${t.url}" target="_blank">開く</a>`:""}</td>
+<td>
+<button onclick="editTask(${t.id})">編集</button>
+<button onclick="duplicateTask(${t.id})">複製</button>
+<button onclick="deleteTask(${t.id})">削除</button>
+<button onclick="markDone(${t.id})">済</button>
+</td></tr>`;
+}
+});
+
+document.querySelectorAll(".nameCol").forEach(e=>e.classList.toggle("hide",privacy));
+document.querySelectorAll(".urlCol").forEach(e=>e.classList.toggle("hide",privacy));
+privacyBtn.classList.toggle("active",privacy);
+taskCountEl.textContent=taskListEl.children.length;
+doneCountEl.textContent=doneListEl.children.length;
+
+if(rankingVisible)generateRanking();
+}
+
+searchInput.addEventListener("input",render);
+dangerInput.addEventListener("input",render);
+function togglePrivacy(){privacy=!privacy;render();}
+function sortByDeadline(){tasks.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));render();}
+function sortByCreated(){tasks.sort((a,b)=>a.id-b.id);render();}
+function backupData(){const blob=new Blob([JSON.stringify(tasks)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup.json";a.click();}
+function restoreData(e){const r=new FileReader();r.onload=()=>{tasks=JSON.parse(r.result);save();render();};r.readAsText(e.target.files[0]);}
+function saveImage(){html2canvas(document.getElementById("taskTable")).then(c=>{const a=document.createElement("a");a.href=c.toDataURL();a.download="task_list.png";a.click();});}
+
+render();
+</script>
+</body>
+</html>
