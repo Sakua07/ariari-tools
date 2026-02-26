@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>管理シート</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+:root{
+  --main:#6c8cff;
+  --sub:#eef1f7;
+  --accent:#dfe6f3;
+  --sum:#f0f3fa;
+}
+body{font-family:sans-serif;background:var(--sub);padding:20px;}
+#app{transform-origin: top left;}
+table{border-collapse:collapse;width:100%;background:white;}
+th,td{border:1px solid #ccc;padding:8px;text-align:center;min-width:80px;}
+th{background:var(--sub);}
+.titleCell{background:var(--accent);font-weight:bold;}
+.sumCell{background:var(--sum);font-weight:bold;}
+button{margin:5px;padding:8px 14px;border:none;background:var(--main);color:white;border-radius:6px;cursor:pointer;font-size:14px;}
+.themeBtn{width:20px;height:20px;border-radius:50%;display:inline-block;margin-right:5px;cursor:pointer;border:2px solid white;}
+#chartBox{margin-top:30px;background:white;padding:20px;border-radius:10px;}
+.chartBtn{background:#666;font-size:12px;padding:6px 10px}
+.pageBtn{background:#999;margin-right:4px}
+.activePage{background:var(--main);}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<div>🎨テーマ変更：
+
+<span class="themeBtn" style="background:#6c8cff" onclick="setTheme('#6c8cff','#eef1f7','#dfe6f3','#f0f3fa')"></span>
+<span class="themeBtn" style="background:#ff7f7f" onclick="setTheme('#ff7f7f','#fff0f0','#ffdede','#fff5f5')"></span>
+
+<span class="themeBtn" style="background:#ff6fae" onclick="setTheme('#ff6fae','#fff0f7','#ffd6ea','#ffeaf4')"></span>
+<span class="themeBtn" style="background:#7fd1b9" onclick="setTheme('#7fd1b9','#e9fbf6','#c7f3e6','#f2fffb')"></span>
+<span class="themeBtn" style="background:#f4c542" onclick="setTheme('#f4c542','#fff9e6','#ffe8a3','#fff3cc')"></span>
+<span class="themeBtn" style="background:#9b6bff" onclick="setTheme('#9b6bff','#f3edff','#e0d2ff','#f6f1ff')"></span>
+</div>
+
+<div id="pages"></div>
+<button onclick="addPage()">＋ページ追加</button>
+<div id="sheetArea"></div>
+
+<div id="chartBox" style="display:none">
+<canvas id="chart"></canvas><br>
+<button class="chartBtn" id="switchBtn" onclick="toggleChartType()">円グラフにする</button>
+<button class="chartBtn" onclick="makeRowChart()">行グラフ</button>
+<button class="chartBtn" onclick="toggleLabels()">タイトル表示切替</button>
+<button class="chartBtn" onclick="hideChart()">グラフを消す</button>
+</div>
+
+<button onclick="addRow()">＋ 行追加</button>
+<button onclick="addCol()">＋ 列追加</button>
+<button onclick="saveBackupFile()">💾 バックアップ保存</button>
+<button onclick="fileLoader.click()">📂 読込</button>
+<button onclick="zoomIn()">＋</button>
+<button onclick="zoomOut()">−</button>
+<button onclick="makeChart()">📊 グラフにする</button>
+<input type="file" id="fileLoader" style="display:none" accept=".johnson">
+
+</div>
+
+<script>
+Chart.register(ChartDataLabels); // ←
+
+let STORAGE_KEY="multiSheet_final";
+let zoomLevel=1,currentPage=0,pagesData=[];
+let chartInstance=null,currentChartType="bar",showLabels=true;
+let lastLabels=[],lastData=[];
+
+function zoomIn(){zoomLevel+=0.1;app.style.transform=`scale(${zoomLevel})`;}
+function zoomOut(){zoomLevel=Math.max(0.5,zoomLevel-0.1);app.style.transform=`scale(${zoomLevel})`;}
+
+function setTheme(m,s,a,sum){
+ document.documentElement.style.setProperty('--main',m);
+ document.documentElement.style.setProperty('--sub',s);
+ document.documentElement.style.setProperty('--accent',a);
+ document.documentElement.style.setProperty('--sum',sum);
+}
+
+function createSheet(){return `<table id="sheet">
+<thead><tr id="headerRow">
+<th class="titleCell" contenteditable>タイトル</th>
+<th contenteditable>項目1</th><th contenteditable>項目2</th><th contenteditable>項目3</th>
+<th contenteditable>項目4</th><th contenteditable>項目5</th><th contenteditable>項目6</th>
+<th class="sumCell">行合計</th></tr></thead>
+<tbody id="bodyRows">
+${Array.from({length:6},(_,i)=>`<tr>
+<th class="titleCell" contenteditable>行${i+1}</th>
+<td contenteditable></td><td contenteditable></td><td contenteditable></td>
+<td contenteditable></td><td contenteditable></td><td contenteditable></td>
+<td class="sumCell"></td></tr>`).join("")}
+</tbody>
+<tfoot><tr id="footRow"><th class="sumCell">列合計</th>
+<td class="sumCell"></td><td class="sumCell"></td><td class="sumCell"></td>
+<td class="sumCell"></td><td class="sumCell"></td><td class="sumCell"></td>
+<td class="sumCell"></td></tr></tfoot></table>`}
+
+function renderSheet(){if(!pagesData[currentPage])pagesData[currentPage]=createSheet();sheetArea.innerHTML=pagesData[currentPage];updateSums();}
+function addPage(){pagesData.push(createSheet());currentPage=pagesData.length-1;updatePages();renderSheet();}
+function updatePages(){pages.innerHTML="";pagesData.forEach((_,i)=>{const b=document.createElement("button");b.textContent="P"+(i+1);b.className="pageBtn"+(i===currentPage?" activePage":"");b.onclick=()=>{savePage();currentPage=i;renderSheet();updatePages();};pages.appendChild(b);});}
+function savePage(){pagesData[currentPage]=sheetArea.innerHTML;}
+
+function getNumber(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+function updateSums(){
+ const table=document.getElementById("sheet"); if(!table) return;
+ const rows=table.tBodies[0].rows; const colCount=table.rows[0].cells.length-1;
+ let colTotals=Array(colCount-1).fill(0);
+ for(let r=0;r<rows.length;r++){
+  let rowTotal=0;
+  for(let c=1;c<colCount;c++){const val=getNumber(rows[r].cells[c].innerText);rowTotal+=val;colTotals[c-1]+=val;}
+  rows[r].cells[colCount].innerText=rowTotal;
+ }
+ const foot=table.tFoot.rows[0];
+ for(let i=0;i<colTotals.length;i++) foot.cells[i+1].innerText=colTotals[i];
+ foot.cells[colCount].innerText=colTotals.reduce((a,b)=>a+b,0);
+}
+
+function addRow(){
+ const tbody=document.getElementById("bodyRows");
+ const cols=headerRow.cells.length;
+ const row=tbody.insertRow();
+ row.insertCell().outerHTML='<th class="titleCell" contenteditable>タイトル</th>';
+ for(let i=1;i<cols;i++){
+  const cell=row.insertCell();
+  if(i===cols-1) cell.className="sumCell"; else cell.contentEditable=true;
+ }
+}
+
+function addCol(){
+ const index=headerRow.cells.length-1;
+ const th=document.createElement("th"); th.contentEditable=true; th.innerText="新項目";
+ headerRow.insertBefore(th, headerRow.cells[index]);
+ for(const row of sheet.tBodies[0].rows){row.insertCell(index).contentEditable=true;}
+ const sum=document.createElement("td"); sum.className="sumCell";
+ footRow.insertBefore(sum, footRow.cells[index]);
+}
+
+function buildChart(type, labels, data){
+ chartBox.style.display="block";
+ lastLabels=labels; lastData=data;
+ if(chartInstance) chartInstance.destroy();
+ chartInstance=new Chart(chart,{
+  type,
+  data:{labels,datasets:[{data}]},
+  options:{plugins:{datalabels:{
+    display:showLabels,
+    color:"#000",
+    formatter:(v,ctx)=>ctx.chart.data.labels[ctx.dataIndex]
+  }}}
+ });
+}
+
+function makeChart(){updateSums();currentChartType="bar";switchBtn.textContent="円グラフにする";
+ buildChart("bar",[...headerRow.cells].slice(1,-1).map(c=>c.innerText),[...footRow.cells].slice(1,-1).map(c=>getNumber(c.innerText)));
+}
+
+function toggleChartType(){
+ if(currentChartType==="bar"){currentChartType="pie";switchBtn.textContent="棒グラフに戻す";makePieChart();}
+ else{makeChart();}
+}
+
+function makeRowChart(){updateSums();currentChartType="bar";buildChart("bar",[...bodyRows.rows].map(r=>r.cells[0].innerText),[...bodyRows.rows].map(r=>getNumber(r.cells[r.cells.length-1].innerText)));}
+function makePieChart(){updateSums();let labels=[...headerRow.cells].slice(1,-1).map(c=>c.innerText);
+let data=[...footRow.cells].slice(1,-1).map(c=>getNumber(c.innerText));
+let combined=labels.map((l,i)=>({l,v:data[i]})).sort((a,b)=>b.v-a.v);
+buildChart("pie",combined.map(x=>x.l),combined.map(x=>x.v));
+}
+
+function toggleLabels(){
+ showLabels=!showLabels;
+ if(chartInstance){
+  chartInstance.options.plugins.datalabels.display=showLabels;
+  chartInstance.update();
+ }
+}
+
+function hideChart(){chartBox.style.display="none";}
+
+function autoSave(){savePage();localStorage.setItem(STORAGE_KEY,JSON.stringify(pagesData));}
+function saveBackupFile(){const blob=new Blob([JSON.stringify(pagesData)],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup.johnson";a.click();}
+fileLoader.addEventListener("change",e=>{const r=new FileReader();r.onload=ev=>{pagesData=JSON.parse(ev.target.result);currentPage=0;updatePages();renderSheet();};r.readAsText(e.target.files[0]);});
+document.addEventListener("input",()=>{updateSums();autoSave();});
+
+pagesData=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+if(pagesData.length===0) pagesData=[createSheet()];
+updatePages();renderSheet();
+</script>
+</body>
+</html>
