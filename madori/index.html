@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>間取りメーカー</title>
+
+<script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+
+<style>
+
+body{
+margin:0;
+height:100vh;
+font-family:sans-serif;
+display:grid;
+grid-template-columns:1fr 320px;
+grid-template-rows:1fr 80px;
+}
+
+/* マップ */
+
+#map{
+grid-column:1;
+grid-row:1;
+background:#f3f3f3;
+}
+
+/* 入力 */
+
+#panel{
+grid-column:2;
+grid-row:1;
+border-left:2px solid #ccc;
+padding:10px;
+overflow:auto;
+background:white;
+}
+
+input,textarea,button{
+width:100%;
+margin:4px 0;
+padding:6px;
+}
+
+/* コマンド */
+
+#commands{
+grid-column:1 / span 2;
+grid-row:2;
+border-top:2px solid #ccc;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+background:#fafafa;
+}
+
+.ctrlBtn{
+width:50px;
+height:50px;
+font-size:20px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div id="panel">
+
+<h3>部屋追加</h3>
+
+幅(m)
+<input id="roomW" value="4">
+
+高さ(m)
+<input id="roomH" value="4">
+
+名前
+<input id="roomName">
+
+詳細
+<textarea id="roomDetail"></textarea>
+
+<button onclick="addRoom()">部屋追加</button>
+
+<hr>
+
+<h3>家具追加</h3>
+
+名前
+<input id="itemName">
+
+幅(cm)
+<input id="itemW">
+
+高さ(cm)
+<input id="itemH">
+
+詳細
+<textarea id="itemDetail"></textarea>
+
+<button onclick="addItem()">家具追加</button>
+
+<button onclick="addWindow()">窓</button>
+<button onclick="addDoor()">扉</button>
+
+<hr>
+
+<h3>編集</h3>
+
+名前
+<input id="editName">
+
+幅(m)
+<input id="editW">
+
+高さ(m)
+<input id="editH">
+
+詳細
+<textarea id="editDetail"></textarea>
+
+<button onclick="updateObject()">更新</button>
+<button onclick="deleteObject()">削除</button>
+
+<hr>
+
+<button onclick="saveJSON()">JSON保存</button>
+<input type="file" onchange="loadJSON(event)">
+
+</div>
+
+<div id="commands">
+
+<button class="ctrlBtn" id="left">←</button>
+<button class="ctrlBtn" id="up">↑</button>
+<button class="ctrlBtn" id="down">↓</button>
+<button class="ctrlBtn" id="right">→</button>
+
+<button class="ctrlBtn" id="zoomIn">＋</button>
+<button class="ctrlBtn" id="zoomOut">−</button>
+
+</div>
+
+<script>
+
+let scale = 100
+let selectedNode = null
+
+const stage = new Konva.Stage({
+container:"map",
+width:window.innerWidth-320,
+height:window.innerHeight-80
+})
+
+const world = new Konva.Group()
+const layer = new Konva.Layer()
+
+stage.add(layer)
+layer.add(world)
+
+const transformer = new Konva.Transformer()
+layer.add(transformer)
+
+window.addEventListener("resize",()=>{
+stage.width(window.innerWidth-320)
+stage.height(window.innerHeight-80)
+})
+
+function zoomIn(){
+let s = world.scaleX()*1.2
+world.scale({x:s,y:s})
+layer.draw()
+}
+
+function zoomOut(){
+let s = world.scaleX()/1.2
+world.scale({x:s,y:s})
+layer.draw()
+}
+
+function move(dx,dy){
+world.x(world.x()+dx)
+world.y(world.y()+dy)
+layer.draw()
+}
+
+document.getElementById("up").onclick=()=>move(0,20)
+document.getElementById("down").onclick=()=>move(0,-20)
+document.getElementById("left").onclick=()=>move(20,0)
+document.getElementById("right").onclick=()=>move(-20,0)
+
+document.getElementById("zoomIn").onclick=zoomIn
+document.getElementById("zoomOut").onclick=zoomOut
+
+function createObject(x,y,w,h,color,name,detail){
+
+let group = new Konva.Group({
+x:x,
+y:y,
+draggable:true
+})
+
+group.name = name
+group.detail = detail
+
+let rect = new Konva.Rect({
+width:w,
+height:h,
+fill:color,
+stroke:"black"
+})
+
+let label = new Konva.Text({
+text:name,
+fontSize:14,
+width:w,
+align:"center"
+})
+
+group.add(rect)
+group.add(label)
+
+group.on("click",()=>select(group))
+
+world.add(group)
+
+layer.draw()
+
+}
+
+function select(node){
+
+selectedNode = node
+
+transformer.nodes([node])
+
+let rect = node.children[0]
+
+editName.value = node.name
+editW.value = (rect.width()/scale).toFixed(2)
+editH.value = (rect.height()/scale).toFixed(2)
+editDetail.value = node.detail
+
+}
+
+function addRoom(){
+
+let w = roomW.value * scale
+let h = roomH.value * scale
+
+createObject(100,100,w,h,"white",roomName.value || "部屋",roomDetail.value)
+
+}
+
+function addItem(){
+
+let w = itemW.value /100 * scale
+let h = itemH.value /100 * scale
+
+createObject(200,200,w,h,"#8ecae6",itemName.value || "家具",itemDetail.value)
+
+}
+
+function addWindow(){
+createObject(200,200,120,20,"#a8dadc","窓","")
+}
+
+function addDoor(){
+createObject(200,200,80,20,"#ffd166","扉","")
+}
+
+function updateObject(){
+
+if(!selectedNode) return
+
+let rect = selectedNode.children[0]
+
+let w = editW.value * scale
+let h = editH.value * scale
+
+rect.width(w)
+rect.height(h)
+
+selectedNode.children[1].text(editName.value)
+
+selectedNode.name = editName.value
+selectedNode.detail = editDetail.value
+
+layer.draw()
+
+}
+
+function deleteObject(){
+
+if(!selectedNode) return
+
+selectedNode.destroy()
+
+transformer.nodes([])
+
+layer.draw()
+
+}
+
+function saveJSON(){
+
+let json = stage.toJSON()
+
+let blob = new Blob([json])
+
+let a = document.createElement("a")
+
+a.href = URL.createObjectURL(blob)
+a.download = "layout.json"
+a.click()
+
+}
+
+function loadJSON(e){
+
+let file = e.target.files[0]
+
+let reader = new FileReader()
+
+reader.onload = ()=>{
+
+let stageData = JSON.parse(reader.result)
+
+stage.destroy()
+
+Konva.Node.create(stageData,"map")
+
+}
+
+reader.readAsText(file)
+
+}
+
+</script>
+
+</body>
+</html>
