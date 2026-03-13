@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>IRIAM楽曲申請ツール</title>
+
+<style>
+body{
+  font-family:sans-serif;
+  background:#ffeef4;
+  padding:20px;
+}
+input,select,button{padding:6px;margin:4px}
+table{width:100%;border-collapse:collapse;background:#fff;margin-top:16px}
+th,td{border:1px solid #ccc;padding:6px}
+th{background:#f7f2f5}
+
+.badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:12px;
+  font-size:12px;
+  color:#fff;
+}
+.jasrac{background:#4caf50}
+.nextone{background:#2196f3}
+
+.btn{cursor:pointer}
+.edit{background:#2196f3;color:#fff}
+.delete{background:#f44336;color:#fff}
+.submit{background:#ff9800;color:#fff}
+</style>
+</head>
+
+<body>
+
+<h2>🍎 IRIAM 楽曲申請ツール 🌸</h2>
+
+<h3>＋ 楽曲追加 / 編集</h3>
+<input id="code" placeholder="作品コード">
+<input id="title" placeholder="タイトル">
+<input id="artist" placeholder="アーティスト">
+<input id="author" placeholder="著作者">
+
+<select id="rights">
+  <option value="jasrac">JASRAC</option>
+  <option value="nextone">NexTone</option>
+</select>
+
+<button onclick="addOrUpdate()">保存</button>
+
+<hr>
+
+<button onclick="backupJSON()">🍏 バックアップ</button>
+<input type="file" onchange="restoreJSON(event)">
+<h6>🍏バックアップボタンで【iriam_songs_backup】の名前でファイルとして保存されファイルを選択を押して【iriam_songs_backup】を選ぶとデータが消えても復元可能
+</h6>
+<hr>
+
+<input id="search" placeholder="検索" oninput="searchSongs()">
+
+<table>
+<thead>
+<tr>
+<th>コード</th>
+<th>タイトル</th>
+<th>アーティスト</th>
+<th>著作者</th>
+<th>管理</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+let db;
+let songs=[];
+let editIndex=-1;
+/* ---------- 🍏変更点 ---------- */
+const DB_NAME="iriamSongsDB_v35";
+const STORE="songs";
+
+/* ---------- IndexedDB ---------- */
+function initDB(){
+  const req=indexedDB.open(DB_NAME,1);
+  req.onupgradeneeded=e=>{
+    db=e.target.result;
+    db.createObjectStore(STORE,{keyPath:"id",autoIncrement:true});
+  };
+  req.onsuccess=e=>{
+    db=e.target.result;
+    loadSongs();
+  };
+}
+
+function saveDB(){
+  const tx=db.transaction(STORE,"readwrite");
+  const store=tx.objectStore(STORE);
+  store.clear();
+  songs.forEach(s=>store.add(s));
+}
+
+function loadSongs(){
+  const tx=db.transaction(STORE,"readonly");
+  const store=tx.objectStore(STORE);
+  const req=store.getAll();
+  req.onsuccess=()=>{
+    songs=req.result||[];
+    insertSampleSongsIfEmpty();
+    render(songs);
+  };
+}
+
+/* ---------- 初回用サンプル ---------- */
+function insertSampleSongsIfEmpty(){
+  if(songs.length>0) return;
+
+  songs = [
+{ code:"127-0097-5", title:"粉雪", artist:"レミオロメン", author:"藤巻　亮太", rights:"jasrac" },
+
+/* ----------クリスマス ---------- */
+
+{ code:"028-5352-3", title:"クリスマス・イブ", artist:"山下 達郎", author:"山下 達郎", rights:"jasrac" },
+
+{ code:"N00006092", title:"恋人がサンタクロース", artist:"松任谷 由実", author:"松任谷 由実", rights:"nextone" },
+
+
+{ code:"012-8688-9", title:"いつかのメリークリスマス", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+
+
+{ code:"091-7779-5", title:"白い恋人達", artist:"桑田 佳祐", author:"桑田 佳祐", rights:"jasrac" },
+
+{ code:"091-0202-7", title:"雪のクリスマス", artist:"ＤＲＥＡＭＳ ＣＯＭＥ　ＴＲＵＥ", author:"吉田 美和", rights:"jasrac" },
+
+{ code:"012-4926-6", title:"クリスマスキャロルの頃には", artist:"稲垣 潤一", author:"三井 誠", rights:"jasrac" },
+
+{ code: "713-6059-0", title: "クリスマスソング", artist: "ｂａｃｋ　ｎｕｍｂｅｒ", author: "清水　依与吏", rights: "jasrac" },
+
+{ code:"292-4923-6", title:"冬と春", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水　依与吏", rights:"jasrac" },
+
+
+{ code:"052-2283-4", title:"津軽海峡・冬景色", artist:"石川 さゆり", author:"三木 たかし", rights:"jasrac" },
+
+{ code:"181-9589-0", title:"冬が終わる前に", artist:"清水 翔太", author:"清水 翔太", rights:"jasrac" },
+
+{ code:"035-8406-2", title:"ゲレンデがとけるほど恋したい", artist:"広瀬 香美", author:"広瀬 香美", rights:"jasrac" },
+
+{ code:"111-0469-4", title:"雪の華", artist:"中島 美嘉", author:"松本 良喜", rights:"jasrac" },
+
+{ code:"021-8436-2", title:"ロマンスの神様", artist:"広瀬 香美", author:"広瀬 香美", rights:"jasrac" },
+
+{ code:"N00107104", title:"スノーマジックファンタジー", artist:"Nakajin", author:"SEKAI　NO　OWARI", rights:"nextone" },
+
+{ code:"207-4010-7", title:"あったかいんだからぁ♪", artist:"クマムシ", author:"クマムシ", rights:"jasrac" },
+
+{ code:"135-8671-8", title:"もしも雪なら", artist:"ＤＲＥＡＭＳ ＣＯＭＥ　ＴＲＵＥ", author:"中村 正人", rights:"jasrac" },
+
+{ code:"105-4449-6", title:"スノースマイル", artist:"ＢＵＭＰ　ＯＦ ＣＨＩＣＫＥＮ", author:"藤原 基央", rights:"jasrac" },
+
+
+{ code:"122-8027-5", title:"ＳＴＯＲＹ", artist:"ＡＩ", author:"２　ＳＯＵＬ", rights:"jasrac" },
+
+
+
+
+{ code:"N00972238", title:"涙そうそう", artist:"BEGIN", author:"BEGIN", rights:"nextone" },
+
+{ code:"N00972194", title:"島人ぬ宝", artist:"BEGIN", author:"BEGIN", rights:"nextone" },
+
+
+
+
+{ code:"060-2416-5", title:"夏祭り", artist:"Ｗｈｉｔｅｂｅｒｒｙ", author:"破矢　ジンタ", rights:"jasrac" },
+
+/* ----------槇原 敬之 ---------- */
+
+
+{ code:"005-7608-5", title:"冬がはじまるよ", artist:"槇原 敬之", author:"槇原 敬之", rights:"jasrac" },
+
+
+{ code:"008-9455-9", title:"もう恋なんてしない", artist:"槇原 敬之", author:"槇原 敬之", rights:"jasrac" },
+
+
+
+
+
+
+{ code:"N01454938", title:"倍倍FIGHT！", artist:"玉屋2060％", author:"CANDY TUNE", rights:"nextone" },
+
+
+  { code:"703-9466-1", title:"今、このとき。", artist:"恵梨香", author:"ひいらぎ", rights:"jasrac" },
+
+  { code:"139-6922-6", title:"夢をかなえてドラえもん", artist:"ＭＡＯ", author:"黒須　克彦", rights:"jasrac" },
+  { code:"070-3488-1", title:"プラチナ", artist:"坂本　真綾", author:"菅野　よう子", rights:"jasrac" },
+  { code:"202-0671-2", title:"ひまわりの約束", artist:"秦　基博", author:"秦　基博", rights:"jasrac" },
+  { code:"133-1209-0", title:"ＧＯＤ　ＫＮＯＷＳ…", artist:"平野　綾", author:"神前　暁", rights:"jasrac" },
+  { code:"064-6758-0", title:"ＢＵＴＴＥＲ－ＦＬＹ", artist:"和田　光司", author:"千綿　偉功", rights:"jasrac" },
+
+
+
+/* ---------- ＢＵＭＰ　ＯＦ　ＣＨＩＣＫＥＮ ---------- */
+
+
+  { code:"085-5823-0", title:"天体観測", artist:"ＢＵＭＰ　ＯＦ　ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+{ code:"805-7650-8", title:"Ｉ", artist:"ＢＵＭＰ　ＯＦ　ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+{ code:"257-3144-1", title:"アカシア", artist:"ＢＵＭＰ ＯＦ ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+{ code:"715-9376-4", title:"アンサー", artist:"ＢＵＭＰ ＯＦ ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+{ code:"167-0230-1", title:"魔法の料理～君から君へ～", artist:"ＢＵＭＰ ＯＦ ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+{ code:"100-0266-9", title:"ダンデライオン", artist:"ＢＵＭＰ ＯＦ ＣＨＩＣＫＥＮ", author:"藤原　基央", rights:"jasrac" },
+
+
+
+{ code:"161-1598-8", title:"君の知らない物語", artist:"ｓｕｐｅｒｃｅｌｌ", author:"ＲＹＯ", rights:"jasrac" },
+
+{ code:"230-2142-0", title:"猫", artist:"ＤＩＳＨ／／", author:"あいみょん", rights:"jasrac" },
+
+/* ---------- あいみょん ---------- */
+
+{ code:"238-7048-6", title:"マリーゴールド", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"228-8059-3", title:"君はロックを聴かない", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"729-4422-6", title:"空の青さを知る人よ", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"724-2379-0", title:"今夜このまま", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"726-7199-8", title:"ハルノヒ", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"283-5319-6", title:"愛の花", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"262-5888-9", title:"愛を知るまでは", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"227-4205-1", title:"愛を伝えたいだとか", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"252-2829-3", title:"さよならの今日に", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"728-7517-8", title:"真夏の夜の匂いがする", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"272-2453-8", title:"初恋が泣いている", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"725-9028-9", title:"あした世界が終わるとしても", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"734-7330-8", title:"裸の心", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+{ code:"298-2711-6", title:"会いに行くのに", artist:"あいみょん", author:"あいみょん", rights:"jasrac" },
+
+
+
+
+/* ---------- アニメ ---------- */
+
+  { code:"247-5619-9", title:"お願いマッスル", artist:"紗倉ひびき", author:"サイドチェスト　烏屋", rights:"jasrac" },
+{ code:"769-9961-1", title:"青のすみか", artist:"キタニタツヤ", author:"キタニタツヤ", rights:"jasrac" },
+{ code:"767-9326-5", title:"メフィスト", artist:"アヴ 女王蜂", author:"薔薇園", rights:"jasrac" },
+{ code:"282-1833-7", title:"サインはＢ", artist:"Ｂ小町 アイ（ＣＶ：高橋李依）", author:"大石 昌良", rights:"jasrac" },
+{ code:"289-0702-7", title:"勇者", artist:"ＹＯＡＳＯＢＩ", author:"ＡＹＡＳＥ", rights:"jasrac" },
+{ code:"282-6877-6", title:"美しい鰭", artist:"スピッツ", author:"草野　正宗", rights:"jasrac" },
+{ code:"N00001282", title:"チェリー", artist:"草野　正宗", author:"スピッツ", rights:"nextone" },
+
+{ code:"048-8114-1", title:"魂のルフラン", artist:"高橋 洋子", author:"大森 俊之", rights:"jasrac" },
+
+
+
+
+
+/* ---------- ヨルシカ ---------- */
+{ code:"501-8787-2", title:"斜陽", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"721-5844-1", title:"ただ君に晴れ", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"729-4260-6", title:"雨とカプチーノ", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"776-4897-8", title:"晴る", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"253-0507-7", title:"花に亡霊", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"229-3071-0", title:"言って。", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"253-4003-4", title:"春泥棒", artist:"ヨルシカ", author:"Ｎ－ＢＵＮＡ", rights:"jasrac" },
+{ code:"N00605818", title:"パレード", artist:"n-buna", author:"ヨルシカ", rights:"nextone" },
+
+/* ----------ポケモン ---------- */
+{ code:"049-4950-1", title:"めざせポケモンマスター", artist:"松本 梨香", author:"たなか ひろかず", rights:"jasrac" },
+{ code:"064-1107-0", title:"ライバル！", artist:"松本 梨香", author:"たなか ひろかず", rights:"jasrac" },
+
+{ code:"108-2421-9", title:"小さきもの", artist:"林 明日香", author:"山移 高寛", rights:"jasrac" },
+{ code:"169-6969-3", title:"アイスクリームシンドローム", artist:"スキマスイッチ", author:"常田　真太郎", rights:"jasrac" },　
+{ code:"767-9472-5", title:"ドキメキダイアリー", artist:"ａｓｍｉ ｆｅａｔ．Ｃｈｉｎｏｚｏ", author:"ＣＨＩＮＯＺＯ", rights:"jasrac" },
+{ code:"058-6770-3", title:"風といっしょに", artist:"小林 幸子", author:"たなか ひろかず", rights:"jasrac" },
+{ code:"160-3518-6", title:"心のアンテナ", artist:"中川 翔子", author:"細野 晴臣", rights:"jasrac" },
+{ code:"196-1951-1", title:"Ｖ", artist:"遊助", author:"たなか　ひろかず", rights:"jasrac" },
+
+
+/* ----------ジブリ ---------- */
+
+{ code:"111-8442-6", title:"世界の約束", artist:"倍賞 千恵子", author:"木村 弓", rights:"jasrac" },
+{ code:"056-2246-8", title:"となりのトトロ", artist:"井上 あずみ", author:"久石 譲", rights:"jasrac" },
+
+{ code:"037-2273-2", title:"さんぽ", artist:"井上 あずみ", author:"久石 譲", rights:"jasrac" },
+{ code:"088-9253-9", title:"いつも何度でも", artist:"木村 弓", author:"木村 弓", rights:"jasrac" },
+
+{ code:"130-6468-1", title:"テルーの唄", artist:"手嶌 葵", author:"谷山 浩子", rights:"jasrac" },
+
+{ code:"146-0874-0", title:"崖の上のポニョ", artist:"藤岡藤巻と大橋のぞみ", author:"久石　譲", rights:"jasrac" },
+
+
+/* ----------いきものがかり ---------- */
+{ code:"707-3376-7", title:"笑顔", artist:"いきものがかり", author:"水野　良樹", rights:"jasrac" },
+{ code:"167-5250-3", title:"ありがとう", artist:"いきものがかり", author:"水野　良樹", rights:"jasrac" },
+{ code:"156-7553-0", title:"ＹＥＬＬ", artist:"いきものがかり", author:"水野　良樹", rights:"jasrac" },
+{ code:"153-7757-1", title:"気まぐれロマンティック", artist:"いきものがかり", author:"水野　良樹", rights:"jasrac" },　
+{ code:"150-8396-9", title:"ブルーバード", artist:"いきものがかり", author:"水野　良樹", rights:"jasrac" },
+{ code:"042-7563-2", title:"もののけ姫", artist:"久石 譲", author:"久石 譲", rights:"jasrac" },
+{ code:"020-5535-0", title:"風の谷のナウシカ", artist:"安田 成美", author:"細野 晴臣", rights:"jasrac" },
+{ code:"169-8881-7", title:"ＡＲＲＩＥＴＴＹ’Ｓ　ＳＯＮＧ", artist:"ＣＥＣＩＬＥ　ＣＯＲＢＥＬ", author:"CABY　SIMON　BENJAMIN", rights:"jasrac" },
+{ code:"N01112012", title:"ハルウタ", artist:"山下　穂尊", author:"いきものがかり", rights:"nextone" },　
+
+
+/* ----------西野カナ ---------- */
+{ code:"211-3265-8", title:"トリセツ", artist:"ＮＥＯＮ＊） 西野 カナ", author:"ＤＪ ＭＡＳＳ（ＶＩＶＩＤ", rights:"jasrac" },
+{ code:"168-3516-6", title:"会いたくて会いたくて", artist:"西野 カナ", author:"ＧＩＯＲＧＩＯ ＣＡＮＣＥＭＩ", rights:"jasrac" },
+{ code:"170-2076-0", title:"ＩＦ", artist:"西野 カナ", author:"ＧＩＯＲＧＩＯ ＣＡＮＣＥＭＩ", rights:"jasrac" },
+{ code:"712-3098-0", title:"もしも運命の人がいるのなら", artist:"西野 カナ", author:"山口 隆志", rights:"jasrac" },
+
+
+
+/* ---------GLAY----------- */
+
+{ code:"N00501447", title:"春を愛する人", artist:"TAKURO", author:"GLAY", rights:"nextone" },
+
+
+/* ----------奥 華子 ---------- */
+
+{ code:"133-0837-8", title:"変わらないもの", artist:"奥 華子", author:"奥 華子", rights:"jasrac" },
+{ code:"132-2342-9", title:"ガーネット", artist:"奥 華子", author:"奥 華子", rights:"jasrac" },
+
+
+/* --------ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ---------- */
+
+{ code:"192-1975-0", title:"ＲＰＧ", artist:"ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ", author:"ＦＵＫＡＳＥ", rights:"jasrac" },
+{ code:"167-7868-5", title:"虹色の戦争", artist:"ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ", author:"深瀬 慧", rights:"jasrac" },
+{ code:"228-4962-9", title:"ＲＡＩＮ", artist:"ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ", author:"ＦＵＫＡＳＥ", rights:"jasrac" },
+{ code:"289-1444-9", title:"最高到達点", artist:"ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ", author:"ＮＡＫＡＪＩＮ", rights:"jasrac" },
+{ code:"739-4556-1", title:"ＳＩＬＥＮＴ", artist:"ＳＥＫＡＩ ＮＯ ＯＷＡＲＩ", author:"ＮＡＫＡＪＩＮ", rights:"jasrac" },
+
+
+
+/* ----------優里 ---------- */
+{ code:"267-4433-3", title:"ベテルギウス", artist:"優里", author:"優里", rights:"jasrac" },
+{ code:"258-2440-6", title:"ドライフラワー", artist:"優里", author:"優里", rights:"jasrac" },
+{ code:"305-5403-9", title:"カーテンコール", artist:"優里", author:"優里", rights:"jasrac" },
+{ code:"738-2764-9", title:"ピーターパン", artist:"優里", author:"優里", rights:"jasrac" },
+{ code:"734-8740-6", title:"かごめ", artist:"優里", author:"優里", rights:"jasrac" },
+
+{ code:"N01247438", title:"ビリミリオン", artist:"優里", author:"優里", rights:"jasrac" },
+
+
+
+
+
+/* ----------Ｂ’ｚ--びーず-------- */
+
+{ code:"035-0313-5", title:"ＬＯＶＥ　ＰＨＡＮＴＯＭ", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"160-5986-7", title:"イチブトゼンブ", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"017-2754-1", title:"愛のままにわがままに僕は君だけを傷つけない", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"017-8730-6", title:"裸足の女神", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"725-4982-3", title:"兵、走る", artist:"Ｂ’ｚ", author:"ＴＡＫ　ＭＡＴＳＵＭＯＴＯ", rights:"jasrac" },
+{ code:"128-6045-0", title:"衝動", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"711-7655-1", title:"有頂天", artist:"Ｂ’ｚ", author:"松本　孝弘", rights:"jasrac" },
+{ code:"130-1899-0", title:"ゆるぎないものひとつ", artist:"Ｂ’ｚ", author:"松本 孝弘", rights:"jasrac" },
+
+
+
+/* ----------ポルノグラフィティ-------- */
+{ code:"N01558269", title:"メリッサ", artist:"ak.homma", author:"ポルノグラフィティ", rights:"nextone" },
+{ code:"N01558323", title:"アゲハ蝶", artist:"ak.homma", author:"ポルノグラフィティ", rights:"nextone" },
+{ code:"N01558308", title:"サウダージ", artist:"ak.homma", author:"ポルノグラフィティ", rights:"nextone" },
+
+
+
+
+{ code:"163-0013-1", title:"恋愛サーキュレーション", artist:"Ｓｅａ☆Ａ", author:"神前　暁", rights:"jasrac" },
+
+/* ----------ｆｒｉｐＳｉｄｅ-------- */
+
+{ code:"500-4801-5", title:"ＯＮＬＹ ＭＹ ＲＡＩＬＧＵＮ", artist:"ｆｒｉｐＳｉｄｅ", author:"八木沼 悟志", rights:"jasrac" },
+
+{ code:"167-2728-2", title:"ＬＥＶＥＬ ５－ＪＵＤＧＥＬＩＧＨＴ－", artist:"ｆｒｉｐＳｉｄｅ", author:"八木沼 悟志", rights:"jasrac" },
+
+/* ---------- μ’Ｓ-------- */
+{ code:"704-3410-7", title:"愛してるばんざーい！", artist:"μ’Ｓ", author:"山田 高弘", rights:"jasrac" },
+
+{ code:"709-9205-3", title:"それは僕たちの奇跡", artist:"μ’Ｓ", author:"黒須 克彦", rights:"jasrac" },
+{ code:"191-7252-4", title:"輝夜の城で踊りたい", artist:"μ’Ｓ", author:"佐々倉 有吾", rights:"jasrac" },
+
+/* ----------ＣｌａｒｉＳ-------- */
+
+{ code:"701-7003-7", title:"コネクト", artist:"ＣｌａｒｉＳ", author:"渡辺 翔", rights:"jasrac" },
+{ code:"227-4586-6", title:"ヒトリゴト", artist:"ＣｌａｒｉＳ", author:"野村 陽一郎", rights:"jasrac" },
+{ code:"756-2356-1", title:"ＡＬＩＶＥ", artist:"ＣｌａｒｉＳ", author:"重永 亮介", rights:"jasrac" },
+
+{ code:"008-4925-1", title:"ムーンライト伝説", artist:"ＤＡＬＩ", author:"小諸　鉄矢", rights:"jasrac" },
+
+{ code:"712-5439-1", title:"シュガーソングとビターステップ", artist:"ＵＮＩＳＯＮ ＳＱＵＡＲＥ ＧＡＲＤＥＮ", author:"田淵 智也", rights:"jasrac" },
+{ code: "119-3767-0", title: "心絵", artist: "ロードオブメジャー", author: "北川　賢一", rights: "jasrac" },
+{ code: "063-9280-6", title: "おジャ魔女カーニバル！！", artist: "ＭＡＨＯ堂", author: "池　毅", rights: "jasrac" },
+
+
+
+{ code:"N00001475", title:"空も飛べるはず", artist:"草野　正宗", author:"スピッツ", rights:"nextone" },
+{ code: "030-6368-2", title: "ロビンソン", artist: "スピッツ", author: "草野　正宗", rights: "jasrac" },
+{ code:"N00001454", title:"楓", artist:"草野　正宗", author:"スピッツ", rights:"nextone" },
+
+
+
+{ code: "153-7757-1", title: "気まぐれロマンティック", artist: "いきものがかり", author: "水野　良樹", rights: "jasrac" },
+{ code: "108-0388-2", title: "カサブタ", artist: "千綿　ヒデノ", author: "千綿　偉功", rights: "jasrac" },
+{ code: "238-6875-9", title: "ロングホープ・フィリア", artist: "菅田　将暉", author: "秋田　ひろむ", rights: "jasrac" },
+
+{ code:"719-9087-9", title:"さよならエレジー", artist:"菅田 将暉", author:"石崎 ひゅーい", rights:"jasrac" },
+
+
+{ code: "038-5917-7", title: "ＤＡＮ　ＤＡＮ心魅かれてく", artist: "ＦＩＥＬＤ　ＯＦ　ＶＩＥＷ", author: "織田　哲郎", rights: "jasrac" },
+{ code: "713-2406-2", title: "海の声", artist: "桐谷　健太", author: "島袋　優", rights: "jasrac" },
+{ code: "200-1841-0", title: "アイネクライネ", artist: "米津　玄師", author: "米津　玄師", rights: "jasrac" },
+{ code: "224-9743-9", title: "ＣＡＴＣＨ　ＴＨＥ　ＭＯＭＥＮＴ", artist: "ＬｉＳＡ", author: "田淵　智也", rights: "jasrac" },
+{ code: "156-7553-0", title: "ＹＥＬＬ", artist: "いきものがかり", author: "水野　良樹", rights: "jasrac" },
+{ code: "119-3764-5", title: "月光花", artist: "Ｊａｎｎｅ　Ｄａ　Ａｒｃ", author: "ＹＡＳＵ", rights: "jasrac" },
+{ code: "070-6662-7", title: "ウィーアー！", artist: "きただに　ひろし", author: "田中　公平", rights: "jasrac" },
+{ code: "003-2549-0", title: "アンパンマンのマーチ", artist: "ドリーミング", author: "三木　たかし", rights: "jasrac" },
+/* ---------ＨＯＮＥＹＷＯＲＫＳ--------- */
+
+{ code: "711-6832-0", title: "アイのシナリオ", artist: "ＣＨｉＣＯ　ｗｉｔｈ　ＨｏｎｅｙＷｏｒｋｓ", author: "ＨＯＮＥＹＷＯＲＫＳ", rights: "jasrac" },
+{ code:"757-8715-6", title:"可愛くてごめん", artist:"ＨｏｎｅｙＷｏｒｋｓ ", author:"ＳＨＩＴＯ", rights:"jasrac" },
+
+{ code:"245-1154-4", title:"ファンサ", artist:"ｍｏｎａ（ＣＶ：夏川 椎菜）", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+{ code: "712-9233-1", title: "プライド革命", artist: "ＣＨｉＣＯ　ｗｉｔｈ　ＨｏｎｅｙＷｏｒｋｓ", author: "ＨＯＮＥＹＷＯＲＫＳ", rights: "jasrac" },
+
+{ code:"209-8504-5", title:"言葉のいらない約束", artist:"鎖那", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+{ code:"716-3223-9", title:"センパイ。", artist:"ＨｏｎｅｙＷｏｒｋｓ ｍｅｅｔｓ ＴｒｙＳａｉｌ", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+{ code:"202-6018-1", title:"世界は恋に落ちている", artist:"ＣＨｉＣＯ ｗｉｔｈ ＨｏｎｅｙＷｏｒｋｓ", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+{ code:"221-0368-6", title:"カヌレ", artist:"ＣＨｉＣＯ ｗｉｔｈ ＨｏｎｅｙＷｏｒｋｓ", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+{ code:"716-9149-9", title:"ロメオ", artist:"ＨｏｎｅｙＷｏｒｋｓ", author:"ＨＯＮＥＹＷＯＲＫＳ", rights:"jasrac" },
+
+/* ----------ＲＡＤＷＩＭＰＳ ---------- */
+{ code:"N00018676", title:"有心論", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00627283", title:"愛にできることはまだあるかい", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+
+{ code:"N00061426", title:"前前前世", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+
+{ code:"N00061442", title:"スパークル", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00061444", title:"なんでもないや", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N01198111", title:"すずめ", artist:"野田 洋次郎", author:"RADWIMPS/十明", rights:"nextone" },
+
+
+{ code:"N00061444", title:"なんでもないや", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00018674", title:"ふたりごと", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N01123332", title:"うるうびと", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00061419", title:"夢灯籠", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00018685", title:"いいんですか?", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00018666", title:"セプテンバーさん", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+
+{ code:"N00018682", title:"me me she", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+{ code:"N00022536", title:"おしゃかしゃま", artist:"野田 洋次郎", author:"RADWIMPS", rights:"nextone" },
+
+
+
+
+
+{ code:"140-2177-3", title:"愛唄", artist:"ＧＲｅｅｅｅＮ", author:"ＧＲＥＥＥＥＮ", rights:"jasrac" },
+{ code:"149-3840-5", title:"キセキ", artist:"ＧＲｅｅｅｅＮ", author:"ＧＲＥＥＥＥＮ", rights:"jasrac" },
+
+
+{ code:"133-4624-5", title:"宙船（そらふね）", artist:"ＴＯＫＩＯ", author:"中島 みゆき", rights:"jasrac" },
+
+
+
+
+
+{ code:"149-9007-5", title:"ＯＮＥ ＬＯＶＥ", artist:"嵐", author:"加藤 裕介", rights:"jasrac" },
+{ code:"137-6138-2", title:"ＬＯＶＥ ＳＯ ＳＷＥＥＴ", artist:"嵐", author:"ＹＯＵＴＨＣＡＳＥ", rights:"jasrac" },
+
+
+
+
+
+
+{ code:"054-8439-1", title:"夜空ノムコウ", artist:"ＳＭＡＰ", author:"川村　結花", rights:"jasrac" },
+
+/* ---------- コブクロ ---------- */
+
+
+{ code:"128-0820-2", title:"桜", artist:"コブクロ", author:"小渕　健太郎", rights:"jasrac" },
+{ code:"137-6501-9", title:"蕾", artist:"コブクロ", author:"小渕　健太郎", rights:"jasrac" },
+{ code:"705-9872-0", title:"紙飛行機", artist:"コブクロ", author:"小渕　健太郎", rights:"jasrac" },
+{ code:"092-7191-1", title:"赤い糸", artist:"コブクロ", author:"小渕　健太郎", rights:"jasrac" },
+
+
+/* ---------- Ａｉｍｅｒ ---------- */
+{ code:"268-3851-6", title:"残響散歌", artist:"Ａｉｍｅｒ", author:"飛内　将大", rights:"jasrac" },
+
+{ code:"748-5169-1", title:"朝が来る", artist:"Ａｉｍｅｒ", author:"梶浦 由記", rights:"jasrac" },
+
+{ code:"220-6979-8", title:"蝶々結び", artist:"Ａｉｍｅｒ", author:"野田 洋次郎", rights:"jasrac" },
+
+
+
+/* ---------- Ａｄｏ例 ---------- */
+{ code:"N01150506", title:"新時代", artist:"中田ヤスタカ", author:"Ado", rights:"nextone" },
+{ code:"N00970563", title:"うっせぇわ", artist:"syudou", author:"Ado", rights:"nextone" },
+
+{ code:"N01018423", title:"踊", artist:"Giga", author:"Ado", rights:"nextone" },
+
+{ code:"N00989956", title:"レディメイド", artist:"すりぃ", author:"Ado", rights:"nextone" },
+
+{ code:"N01175964", title:"逆光", artist:"Vaundy", author:"Ado", rights:"nextone" },
+
+{ code:"N00990168", title:"ギラギラ", artist:"てにをは", author:"Ado", rights:"nextone" },
+
+
+{ code:"N01577559", title:"わたしに花束", artist:"shito", author:"Ado", rights:"nextone" },
+
+{ code:"N00112013", title:"愛して愛して愛して", artist:"きくお", author:"きくお", rights:"nextone" },
+
+
+{ code:"N01175966", title:"Tot Musica", artist:"澤野弘之", author:"Ado", rights:"nextone" },
+
+
+
+
+{ code:"751-9149-1", title:"永遠のあくる日", artist:"Ａｄｏ", author:"てにをは", rights:"jasrac" },
+
+{ code:"329-5110-8", title:"ＭＡＧＩＣ", artist:"Ａｄｏ", author:"ツミキ", rights:"jasrac" },
+
+{ code:"315-9014-4", title:"エルフ", artist:"Ａｄｏ", author:"てにをは", rights:"jasrac" },
+
+{ code:"264-8189-8", title:"会いたくて", artist:"Ａｄｏ", author:"みゆはん", rights:"jasrac" },
+
+{ code:"790-0460-1", title:"初夏", artist:"Ａｄｏ", author:"ＡＤＯ", rights:"jasrac" },
+
+
+{ code:"204-5991-2", title:"シルエット", artist:"ＫＡＮＡ－ＢＯＯＮ", author:"谷口　鮪", rights:"jasrac" },
+
+
+
+
+
+{ code:"N00953948", title:"ツキミソウ", artist:"竹中 雄大", author:"Novelbright", rights:"nextone" },
+
+/* ---------- 昭和？ ---------- */
+
+
+{ code:"067-8729-1", title:"春一番", artist:"キャンディーズ", author:"穂口　雄右", rights:"jasrac" },
+{ code:"N00876788", title:"春を告げる", artist:"くじら", author:"yama", rights:"nextone" },
+{ code:"002-3832-5", title:"赤いスイートピー", artist:"松田 聖子", author:"呉田 軽穂", rights:"jasrac" },
+
+
+{ code:"048-9051-5", title:"明日、春が来たら", artist:"松 たか子", author:"HINATA DAISUKE", rights:"jasrac" },
+
+{ code:"111-0753-7", title:"ハナミズキ", artist:"一青　窈", author:"マシコタツロウ", rights:"jasrac" },　
+
+{ code:"093-5524-3", title:"ＲＵＮＮＥＲ", artist:"爆風スランプ", author:"Ｎｅｗファンキー 末吉", rights:"jasrac" },
+
+
+{ code:"125-4361-6", title:"プラネタリウム", artist:"大塚　愛", author:"愛", rights:"jasrac" },
+
+{ code:"027-6330-3", title:"シングルベッド", artist:"シャ乱Ｑ", author:"はたけ", rights:"jasrac" },
+
+
+
+{ code:"150-4813-6", title:"ＳＵＭＭＥＲ　ＳＯＮＧ", artist:"ＹＵＩ", author:"ＹＵＩ", rights:"jasrac" },
+
+/* ---------- ｂａｃｋ ｎｕｍｂｅｒバックナンバー ---------- */
+
+{ code:"193-6014-2", title:"高嶺の花子さん", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"726-3125-2", title:"ＨＡＰＰＹ　ＢＩＲＴＨＤＡＹ", artist:"ｂａｃｋ　ｎｕｍｂｅｒ", author:"清水　依与吏", rights:"jasrac" },
+{ code:"716-1006-5", title:"ハッピーエンド", artist:"ｂａｃｋ ｎｕｍｂｅｒ ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"711-4889-2", title:"ヒロイン", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"176-0444-3", title:"花束", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"233-0373-5", title:"瞬き", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"743-0890-4", title:"怪盗", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"712-3307-5", title:"ＳＩＳＴＥＲ", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"218-4774-6", title:"僕の名前を", artist:"ｂａｃｋ ｎｕｍｂｅ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"723-3981-1", title:"大不正解", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"186-8514-5", title:"わたがし", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"266-0860-0", title:"黄色", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"756-0642-9", title:"ベルベットの詩", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"189-3110-3", title:"青い春", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"738-4262-1", title:"水平線", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"220-3408-1", title:"黒い猫の歌", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"199-5491-3", title:"世田谷ラブストーリー", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"184-7584-1", title:"日曜日", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"175-8854-5", title:"はなびら", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"323-7835-1", title:"幕が上がる", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"716-1007-3", title:"君の恋人になったら", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"257-9208-3", title:"エメラルド", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"241-4021-0", title:"オールドファッション", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+{ code:"277-2728-9", title:"アイラブユー", artist:"ｂａｃｋ ｎｕｍｂｅｒ", author:"清水 依与吏", rights:"jasrac" },
+
+
+
+
+
+
+{ code: "104-0395-7", title: "大切なもの", artist: "ロードオブメジャー", author: "北川　賢一", rights: "jasrac" },
+
+
+/* ----------ＬｉＳＡ ---------- */
+
+{ code:"732-7819-0", title:"紅蓮華", artist:"ＬｉＳＡ", author:"草野　華余子", rights:"jasrac" },
+{ code:"256-1106-2", title:"炎", artist:"ＬｉＳＡ", author:"梶浦 由記", rights:"jasrac" },
+{ code:"267-0761-6", title:"明け星", artist:"ＬｉＳＡ", author:"梶浦　由記", rights:"jasrac" },
+
+
+/* ----------ａｉｋｏ ---------- */
+
+{ code:"070-9458-2", title:"カブトムシ", artist:"ａｉｋｏ", author:"ＡＩＫＯ", rights:"jasrac" },
+{ code:"721-4924-8", title:"ストロー", artist:"ａｉｋｏ", author:"ＡＩＫＯ", rights:"jasrac" },
+{ code:"069-2856-1", title:"花火", artist:"ａｉｋｏ", author:"ＡＩＫＯ", rights:"jasrac" },
+{ code:"297-7041-6", title:"相思相愛", artist:"ａｉｋｏ", author:"ＡＩＫＯ", rights:"jasrac" },
+
+
+/* ----------荒井 由実 ---------- */
+
+{ code:"088-2702-8", title:"やさしさに包まれたなら", artist:"荒井 由実", author:"荒井 由実", rights:"jasrac" },
+{ code:"094-4809-8", title:"ルージュの伝言", artist:"荒井 由実", author:"荒井 由実", rights:"jasrac" },
+
+
+{ code:"009-2825-9", title:"糸", artist:"中島 みゆき", author:"中島 みゆき", rights:"jasrac" },
+
+
+{ code:"029-1359-3", title:"春よ来い", artist:"広瀬 香美", author:"広瀬 香美", rights:"jasrac" },
+
+{ code:"054-5900-1", title:"歌うたいのバラッド", artist:"斉藤 和義", author:"斉藤 和義", rights:"jasrac" },
+
+{ code:"101-9889-0", title:"風になる", artist:"つじ あやの", author:"つじ あやの", rights:"jasrac" },
+
+{ code:"018-2059-1", title:"真夏の夜の夢", artist:"松任谷 由実", author:"松任谷 由実", rights:"jasrac" },
+
+{ code:"022-2968-4", title:"君が好きだと叫びたい", artist:"ＢＡＡＤ", author:"多々納　好夫", rights:"jasrac" },
+
+{ code:"N00027200", title:"雫", artist:"スキマスイッチ", author:"大橋　卓弥", rights:"jasrac" },
+
+
+
+/* ----------米津 玄師 ---------- */
+
+{ code:"276-9622-7", title:"ＫＩＣＫ　ＢＡＣＫ", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+
+{ code:"229-7721-0", title:"打上花火", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code: "225-4697-9", title: "ＯＲＩＯＮ", artist: "米津　玄師", author: "米津　玄師", rights: "jasrac" },
+
+{ code:"238-2987-7", title:"パプリカ", artist:"Ｆｏｏｒｉｎ", author:"米津　玄師", rights:"jasrac" },
+
+{ code:"720-5540-5", title:"ＬＥＭＯＮ", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"803-4372-4", title:"ＩＲＩＳ　ＯＵＴ", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"221-4680-6", title:"ＬＯＳＥＲ", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"736-7911-9", title:"感電", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"232-2768-1", title:"灰色と青（＋菅田将暉）", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+
+{ code:"287-1978-6", title:"地球儀", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"226-5780-1", title:"ピースサイン", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+
+
+{ code:"727-8736-8", title:"海の幽霊", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"184-3769-9", title:"ゴーゴー幽霊船", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+{ code:"232-2830-0", title:"春雷", artist:"米津 玄師", author:"米津 玄師", rights:"jasrac" },
+
+
+
+
+/* ----------サザンオールスターズ ---------- */
+
+
+{ code:"080-9216-8", title:"真夏の果実", artist:"サザンオールスターズ", author:"桑田　佳祐", rights:"jasrac" },
+
+
+{ code:"071-4940-9", title:"ＴＳＵＮＡＭＩ", artist:"サザンオールスターズ", author:"桑田　佳祐", rights:"jasrac" },
+
+
+
+
+
+{ code:"712-9459-7", title:"君がくれた夏", artist:"家入 レオ", author:"西尾 芳彦", rights:"jasrac" },
+
+
+
+
+{ code: "133-4586-9", title: "ＳＨＡＭＲＯＣＫ", artist: "ＵＶＥＲｗｏｒｌｄ", author: "ＴＡＫＵＹＡ∞", rights: "jasrac" },
+
+/* ----------Ｍｒ．Ｃｈｉｌｄｒｅｎ ---------- */
+
+{ code:"N00008010", title:"Sign", artist:"桜井　和寿", author:"Mr.Children", rights:"nextone" },
+{ code:"N00020586", title:"HANABI", artist:"桜井　和寿", author:"Mr.Children", rights:"nextone" },
+
+{ code:"N00003988", title:"シーソーゲーム", artist:"桜井　和寿", author:"Mr.Children", rights:"nextone" },
+
+{ code:"027-8997-3", title:"ＴＯＭＯＲＲＯＷ　ＮＥＶＥＲ　ＫＮＯＷＳ", artist:"桜井　和寿", author:"Ｍｒ．Ｃｈｉｌｄｒｅｎ", rights:"jasrac" },
+
+{ code:"N00012182", title:"彩り", artist:"桜井 和寿", author:"Mr.Children", rights:"nextone" },
+
+{ code:"722-6681-3", title:"点描の唄（ＦＥＡＴ．井上苑子）", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+
+{ code: "156-1823-4", title: "ブラック★ロックシューター", artist: "ｓｕｐｅｒｃｅｌｌ", author: "ＲＹＯ", rights: "jasrac" },
+{ code:"N00093916", title:"ローリンガール", artist:"wowaka", author:"wowaka", rights:"nextone" },{ code: "121-1640-8", title: "何度でも", artist: "ＤＲＥＡＭＳ　ＣＯＭＥ　ＴＲＵＥ", author: "吉田　美和", rights: "jasrac" },
+{ code: "002-9922-7", title: "天城越え", artist: "石川　さゆり", author: "弦　哲也", rights: "jasrac" },
+{ code: "221-0518-2", title: "なんでもないや", artist: "ＲＡＤＷＩＭＰＳ", author: "野田　洋次郎", rights: "jasrac" },
+{ code: "309-9076-9", title: "打上花火", artist: "米津　玄師", author: "米津　玄師", rights: "jasrac" },
+{ code: "220-4636-4", title: "前前前世", artist: "ＲＡＤＷＩＭＰＳ", author: "野田　洋次郎", rights: "jasrac" },
+{ code: "221-4680-6", title: "ＬＯＳＥＲ", artist: "米津　玄師", author: "米津　玄師", rights: "jasrac" },
+{ code: "209-9908-9", title: "ＳＵＮ", artist: "星野　源", author: "星野　源", rights: "jasrac" },
+
+{ code: "115-8709-1", title: "make a wish", artist: "ELLEGARDEN", author: "細美　武士", rights: "jasrac" },
+{ code: "089-8413-1", title: "＊ＳＥＣＲＥＴ　ＢＡＳＥ～君がくれたもの～", artist: "ＺＯＮＥ", author: "町田　紀彦", rights: "jasrac" },
+
+/* ----------ＹＯＡＳＯＢＩ ---------- */
+
+{ code: "765-3460-0", title: "アイドル", artist: "ＹＯＡＳＯＢＩ", author: "ＡＹＡＳＥ", rights: "jasrac" },
+{ code:"732-3245-9", title:"夜に駆ける", artist:"ＹＯＡＳＯＢＩ", author:"ＡＹＡＳＥ", rights:"jasrac" },
+{ code:"740-9268-5", title:"怪物", artist:"ＹＯＡＳＯＢＩ", author:"ＡＹＡＳＥ", rights:"jasrac" },
+{ code:"758-5478-3", title:"祝福", artist:"ＹＯＡＳＯＢＩ", author:"ＡＹＡＳＥ", rights:"jasrac" },
+
+
+{ code:"152-0139-2", title:"ライオン", artist:"Ｍａｙ’ｎ", author:"ＧＡＢＲＩＥＬＡ ＲＯＢＩＮ", rights:"jasrac" },
+
+
+
+
+{ code:"016-6420-4", title:"負けないで", artist:"ＺＡＲＤ", author:"織田 哲郎", rights:"jasrac" },
+
+/* ----------Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ ---------- */
+{ code:"722-6679-1", title:"青と夏", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"780-8162-9", title:"ライラック", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"283-0574-4", title:"ケセラセラ", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"725-5387-1", title:"僕のこと", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"728-9982-4", title:"インフェルノ", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"271-4959-5", title:"ダンスホール", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"277-6396-0", title:"ＳＯＲＡＮＪＩ", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+{ code:"803-2546-7", title:"夏の影", artist:"Ｍｒｓ．ＧＲＥＥＮ ＡＰＰＬＥ", author:"大森 元貴", rights:"jasrac" },
+
+/* ----------ＳＵＰＥＲ ＢＥＡＶＥＲ ---------- */
+
+{ code:"262-7256-3", title:"名前を呼ぶよ", artist:"ＳＵＰＥＲ ＢＥＡＶＥＲ", author:"柳沢　亮太", rights:"jasrac" },
+
+{ code:"714-9837-1", title:"人として", artist:"ＳＵＰＥＲ ＢＥＡＶＥＲ", author:"柳沢 亮太", rights:"jasrac" },
+
+{ code:"739-0433-3", title:"突破口", artist:"ＳＵＰＥＲ ＢＥＡＶＥＲ", author:"柳沢 亮太", rights:"jasrac" },
+
+{ code:"284-0640-1", title:"儚くない", artist:"ＳＵＰＥＲ ＢＥＡＶＥＲ", author:"柳沢 亮太", rights:"jasrac" },
+
+
+
+
+/* ----------マカロニえんぴつ ---------- */
+
+
+{ code:"N01104410", title:"なんでもないよ、", artist:"はっとり", author:"マカロニえんぴつ", rights:"nextone" },
+
+
+
+/* ----------Ｏｆｆｉｃｉａｌ髭男ｄｉｓｍ年代---------- */
+
+
+{ code:"245-4943-6", title:"ＰＲＥＴＥＮＤＥＲ", artist:"Ｏｆｆｉｃｉａｌ髭男ｄｉｓｍ", author:"藤原　聡", rights:"jasrac" },
+
+{ code:"271-5866-7", title:"ミックスナッツ", artist:"Ｏｆｆｉｃｉａｌ髭男ｄｉｓｍ", author:"藤原　聡", rights:"jasrac" },
+
+
+
+
+/* ----------ボカロ ---------- */
+{ code:"N00099604", title:"千本桜", artist:"黒うさ", author:"黒うさP", rights:"nextone" },
+{ code:"174-4391-1", title:"ハッピーシンセサイザ", artist:"ＥＡＳＹ ＰＯＰ ＦＥＡＴ．巡音ルカ．ＧＵＭＩ", author:"ＢＥＴＴＩ", rights:"jasrac" },
+{ code:"186-9875-1", title:"地球最後の告白を", artist:"ｋｅｍｕ ｆｅａｔ．ＩＡ", author:"ＫＥＭＵ", rights:"jasrac" },
+{ code:"N00040669", title:"キリトリセン", artist:"40mP", author:"40MP FEAT.初音ミク", rights:"nextone" },
+{ code:"N00633018", title:"アイロニ", artist:"すこっぷ", author:"すこっぷ", rights:"nextone" },
+{ code:"707-1786-9", title:"ブリキノダンス", artist:"日向電工", author:"日向電工", rights:"jasrac" },
+{ code:"N00128816", title:"妄想感傷代償連盟", artist:"DECO＊27", author:"DECO*27", rights:"nextone" },
+{ code:"156-1823-4", title:"ブラック★ロックシューター", artist:"ｓｕｐｅｒｃｅｌｌ", author:"ＲＹＯ", rights:"jasrac" },
+{ code:"718-8310-0", title:"命に嫌われている。", artist:"カンザキ イオリ", author:"カンザキ イオリ", rights:"jasrac" },
+{ code:"282-9463-7", title:"強風オールバック", artist:"ゆこぴ", author:"ゆこぴ", rights:"jasrac" },
+{ code:"722-9731-0", title:"少女レイ", artist:"みきとＰ", author:"みきとＰ", rights:"jasrac" },
+{ code:"N00580969", title:"少女レイ", artist:"みきとP", author:"みきとP", rights:"nextone" },
+{ code:"N01159575", title:"粛聖!!ロリ神レクイエム☆", artist:"しぐれうい", author:"D.watt", rights:"jasrac" },
+{ code:"231-1211-5", title:"＊フクロウが知らせる客が来たと", artist:"ＫＯＫＩＡ", author:"ＫＯＫＩＡ", rights:"jasrac" },
+{ code:"N01159575", title:"粛聖!!ロリ神レクイエム☆", artist:"D.watt", author:"しぐれうい", rights:"nextone" },
+  { code:"N01063735", title:"駆けろ", artist:"星街すいせい", author:"みきとP", rights:"nextone" },
+  { code:"N01039496", title:"GHOST", artist:"星街すいせい", author:"佐藤厚仁", rights:"nextone" },
+  { code:"N01103286", title:"stellar stellar", artist:"星街すいせい", author:"TAKU INOUE", rights:"nextone" },
+  { code:"N01232395", title:"みちづれ", artist:"星街すいせい", author:"Ayase", rights:"nextone" }
+
+  ];
+
+  saveDB();
+}
+
+/* ---------- 描画 ---------- */
+function render(list){
+  const tbody=document.getElementById("tbody");
+  tbody.innerHTML="";
+  list.forEach(song=>{
+    const realIndex = songs.indexOf(song);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${song.code}</td>
+      <td>${song.title}</td>
+      <td>${song.artist}</td>
+      <td>${song.author}</td>
+      <td><span class="badge ${song.rights}">${song.rights.toUpperCase()}</span></td>
+      <td>
+        <button class="btn edit" onclick="edit(${realIndex})">編集</button>
+        <button class="btn delete" onclick="removeSong(${realIndex})">削除</button>
+        <button class="btn submit" onclick="submitIRIAM(${realIndex})">申請</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- 追加 / 編集 ---------- */
+function addOrUpdate(){
+  const song={
+    code:code.value.trim(),
+    title:title.value.trim(),
+    artist:artist.value.trim(),
+    author:author.value.trim(),
+    rights:rights.value
+  };
+  if(!song.code||!song.title) return alert("未入力あり");
+
+  editIndex===-1 ? songs.push(song) : songs[editIndex]=song;
+  editIndex=-1;
+  saveDB();
+  render(songs);
+  clearForm();
+}
+
+function edit(i){
+  const s=songs[i];
+  code.value=s.code;
+  title.value=s.title;
+  artist.value=s.artist;
+  author.value=s.author;
+  rights.value=s.rights;
+  editIndex=i;
+}
+
+function clearForm(){
+  code.value=title.value=artist.value=author.value="";
+  rights.value="jasrac";
+}
+
+function removeSong(i){
+  if(confirm("削除しますか？")){
+    songs.splice(i,1);
+    saveDB();
+    render(songs);
+  }
+}
+
+/* ---------- 検索 ---------- */
+function searchSongs(){
+  const k=search.value.toLowerCase();
+  render(
+    songs.filter(s =>
+      s.title.toLowerCase().includes(k) ||
+      s.artist.toLowerCase().includes(k)||
+ s.author.toLowerCase().includes(k)
+    )
+  );
+}
+
+/* ---------- 申請 ---------- */
+function submitIRIAM(i){
+  const s=songs[i];
+  const url=`https://www.iriam.app/music-use-request?platform=${s.rights}`
+    +`&work_code=${encodeURIComponent(s.code)}`
+    +`&title=${encodeURIComponent(s.title)}`
+    +`&artist=${encodeURIComponent(s.artist)}`
+    +`&author=${encodeURIComponent(s.author)}`;
+
+  navigator.clipboard.writeText(
+    `${s.code} ${s.title} ${s.artist} ${s.author}`
+  );
+
+window.open(url, "_blank");
+}
+
+function backupJSON(){
+  const blob=new Blob([JSON.stringify(songs,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="iriam_songs_backup.json";
+  a.click();
+}
+
+function restoreJSON(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    songs=JSON.parse(r.result);
+    saveDB();
+    render(songs);
+  };
+  r.readAsText(file);
+}
+
+initDB();
+</script>
+</body>
+</html>
