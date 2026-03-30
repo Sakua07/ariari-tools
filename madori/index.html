@@ -14,14 +14,41 @@ height:100vh;
 font-family:sans-serif;
 display:grid;
 grid-template-columns:1fr 320px;
-grid-template-rows:1fr 80px;
+grid-template-rows:80px 1fr;
+}
+
+/* コマンド（上に戻す） */
+
+#commands{
+grid-column:1 / span 2;
+grid-row:1;
+border-bottom:2px solid #ccc;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:6px;
+background:#fafafa;
+padding:6px;
+}
+
+#commandRow{
+display:flex;
+gap:10px;
+}
+
+.ctrlBtn{
+width:50px;
+height:50px;
+font-size:20px;
+cursor:pointer;
 }
 
 /* マップ */
 
 #map{
 grid-column:1;
-grid-row:1;
+grid-row:2;
 background:#f3f3f3;
 }
 
@@ -29,7 +56,7 @@ background:#f3f3f3;
 
 #panel{
 grid-column:2;
-grid-row:1;
+grid-row:2;
 border-left:2px solid #ccc;
 padding:10px;
 overflow:auto;
@@ -42,34 +69,41 @@ margin:4px 0;
 padding:6px;
 }
 
-/* コマンド */
-
-#commands{
-grid-column:1 / span 2;
-grid-row:2;
-border-top:2px solid #ccc;
-display:flex;
-align-items:center;
-justify-content:center;
-gap:10px;
-background:#fafafa;
-}
-
-.ctrlBtn{
-width:50px;
-height:50px;
-font-size:20px;
-cursor:pointer;
-}
-
 </style>
 </head>
 
 <body>
 
+<!-- コマンド -->
+<div id="commands">
+
+<div style="font-size:12px;">
+矢印：移動 / ＋−：拡大縮小 / オブジェクトクリック後 → 編集・削除可能
+</div>
+
+<div id="commandRow">
+<button class="ctrlBtn" id="left">←</button>
+<button class="ctrlBtn" id="up">↑</button>
+<button class="ctrlBtn" id="down">↓</button>
+<button class="ctrlBtn" id="right">→</button>
+
+<button class="ctrlBtn" id="zoomIn">＋</button>
+<button class="ctrlBtn" id="zoomOut">−</button>
+
+<button class="ctrlBtn" onclick="focusEdit()">✎</button>
+<button class="ctrlBtn" onclick="deleteObject()">🗑</button>
+</div>
+
+</div>
+
 <div id="map"></div>
 
 <div id="panel">
+
+<div style="font-size:13px; margin-bottom:10px;">
+① 右の入力から「部屋」や「家具」を追加してね！※数字は半角<br>
+② 追加後、ドラッグで移動や上のコマンドで編集入力へ移動できるよ
+</div>
 
 <h3>部屋追加</h3>
 
@@ -134,18 +168,6 @@ cursor:pointer;
 
 </div>
 
-<div id="commands">
-
-<button class="ctrlBtn" id="left">←</button>
-<button class="ctrlBtn" id="up">↑</button>
-<button class="ctrlBtn" id="down">↓</button>
-<button class="ctrlBtn" id="right">→</button>
-
-<button class="ctrlBtn" id="zoomIn">＋</button>
-<button class="ctrlBtn" id="zoomOut">−</button>
-
-</div>
-
 <script>
 
 let scale = 100
@@ -196,6 +218,11 @@ document.getElementById("right").onclick=()=>move(-20,0)
 
 document.getElementById("zoomIn").onclick=zoomIn
 document.getElementById("zoomOut").onclick=zoomOut
+
+function focusEdit(){
+if(!selectedNode) return
+editName.focus()
+}
 
 function createObject(x,y,w,h,color,name,detail){
 
