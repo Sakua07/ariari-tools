@@ -51,6 +51,19 @@
 <h5>🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！</h5>
 <h5>🐝ガチャを引いた後にURLを入れてももう一度一覧表示ボタンを押せば履歴コピーに反映されるよ！</h5>
 
+
+<div style="position:absolute; right:16px; top:140px; width:220px;">
+  <div class="card">
+    <h3>⭐送信者登録</h3>
+    <input id="senderName" type="text" placeholder="名前">
+    <input id="senderURL" type="text" placeholder="URL">
+    <button id="addSenderBtn">追加</button>
+    <button id="toggleSenderBtn" class="secondary">一覧</button>
+    <div id="senderList" style="display:none;"></div>
+  </div>
+</div>
+
+
 <div class="card">
   <h2>ガチャ内容追加</h2>
   <div class="flex-row">
@@ -163,7 +176,24 @@ function loadFromDB(key) {
    （ DB 化）
    --------------------------------------------------------- */
 let ITEMS = [], history = [], playerNames = [], historyPlayers = [];
+let senders = [];
+
+
+
+
 const historyEl = document.getElementById("history");
+
+
+const senderList = document.getElementById("senderList");
+const senderName = document.getElementById("senderName");
+const senderURL = document.getElementById("senderURL");
+const addSenderBtn = document.getElementById("addSenderBtn");
+const toggleSenderBtn = document.getElementById("toggleSenderBtn");
+
+
+
+
+
 /* DB から読み込み */
 async function loadData() {
   await openDB();
@@ -171,6 +201,17 @@ async function loadData() {
   history = (await loadFromDB("gacha_history")) || [];
   playerNames = (await loadFromDB("gacha_playerNames")) || [];
   historyPlayers = (await loadFromDB("gacha_historyPlayers")) || [];
+
+
+/* ---------------------------------------------------------
+  あと修正
+   --------------------------------------------------------- */
+
+senders = (await loadFromDB("gacha_senders")) || [];
+renderSenderList();
+
+
+
   playerNames.forEach(n => {
     let o = document.createElement("option");
     o.value = n; o.textContent = n;
@@ -359,6 +400,45 @@ copyAllBtn.onclick=()=>{
   if(!text){alert("コピー対象がありません");return;}
   navigator.clipboard.writeText(text).then(()=>alert("コピーしました！（最新URLも反映済）"));
 };
+
+
+
+function renderSenderList(){
+  senderList.innerHTML="";
+  senders.forEach((s,i)=>{
+    let div=document.createElement("div");
+    div.className="item";
+    div.innerHTML=`
+      <span>${s.name}</span>
+      <button onclick="window.open('${s.url}','_blank')">開く</button>
+    `;
+    senderList.appendChild(div);
+  });
+}
+
+addSenderBtn.onclick = async ()=>{
+  let name = senderName.value.trim();
+  let url = senderURL.value.trim();
+  if(!name || !url) return alert("入力してね");
+
+  senders.push({name,url});
+  await saveToDB("gacha_senders", senders);
+
+  senderName.value="";
+  senderURL.value="";
+  renderSenderList();
+};
+
+toggleSenderBtn.onclick = ()=>{
+  senderList.style.display = senderList.style.display==="none" ? "block" : "none";
+};
+
+
+
+
+
+
+
 clearBtn.onclick=()=>{results.innerHTML="";};
 rollBtn.onclick=()=>{let n=parseInt(times.value)||1;roll(n);};
 roll1.onclick=()=>roll(1);
