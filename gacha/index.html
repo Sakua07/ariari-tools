@@ -47,9 +47,21 @@
 </div>
 <h5>🌸 困った時はアリの手も借りたい〜🐜</h5>
 <h1>🌸 URL保存機能付きガチャツール！</h1>
-<h5>🐝ガチャの中身を入れて追加ボタンを押したら保存されるよ！</h5>
-<h5>🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！</h5>
+<h5>①🐝ガチャの中身を入れて追加ボタンを押したら保存されるよ！※バックアップ推奨インポートで保存されたファイル選択で復元</h5>
+<h5>②🐝ガチャ実行で引く人の名前入力後回数指定でガチャが回せるよ！</h5>
+<h5>③🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！</h5>
 <h5>🐝ガチャを引いた後にURLを入れてももう一度一覧表示ボタンを押せば履歴コピーに反映されるよ！</h5>
+<h8>⚠️注意</h8>
+<p>
+このツールはローカル環境（あなたの端末内）で動いています！<br><br>
+
+・ファイルを選択で画像は保存できますが、保存容量は端末に依存します<br>
+・画像サイズが大きすぎると動作が重くなったり保存できない場合があります<br>
+・データはこの端末にのみ保存されます<br><br>
+
+※安心して使えますが、大きすぎる画像の入れすぎには注意してね🐜
+管理は自己責任でお願いします🌸
+</p>
 
 
 <div style="position:absolute; right:16px; top:140px; width:220px;">
@@ -65,7 +77,7 @@
 
 
 <div class="card">
-  <h2>ガチャ内容追加</h2>
+  <h2>①ガチャ内容追加</h2>
   <div class="flex-row">
     <select id="addRarity">
       <option value="N">N</option>
@@ -79,7 +91,19 @@
     <input id="addLink" type="text" placeholder="リンク（Xには共有しません）" />
     <button id="addBtn">追加</button>
   </div>
-  <div class="flex-row">
+
+
+
+<div class="flex-row">
+  <input type="file" id="addImage" accept="image/png">
+</div>
+
+
+
+ <div class="flex-row" style="flex-wrap:wrap;">
+
+
+
     <label>確率（Nは自動計算）</label>
     <input id="probR" type="number" min="0" max="100" value="10"/> R
     <input id="probSR" type="number" min="0" max="100" value="5"/> SR
@@ -95,7 +119,7 @@
   </div>
 </div>
 <div class="card">
-  <h2>ガチャ実行</h2>
+  <h2>②ガチャ実行</h2>
   <div class="flex-row">
     <input id="playerName" type="text" placeholder="引く人の名前" />
     <select id="nameSelect"><option value="">選択</option></select>
@@ -116,10 +140,40 @@
   <div id="results" class="results"></div>
 </div>
 <div class="card">
-  <h2>履歴（まとめ表示）</h2>
+  <h2>③履歴（まとめ表示）</h2>
+<div style="margin:8px 0; font-size:14px;">
+  <b>🐜使い方メモ</b><br><br>
+
+　送信者を選ぶ→一覧表示<br><br>
+  　URL作成 → 画像をまとめてダウンロードできるページがダウンロードされるよ！<br><br>
+
+  そのファイルをそのまま送れば<br>
+  相手も開いて画像保存できるよ🌸<br><br>
+
+  <small>※リンクではなく「ファイル」がダウンロードされます</small>
+</div>
+
+
+
   <div class="flex-row">
-    <select id="historyFilter"><option value="">全員</option></select>
+    <select id="historyFilter"><option value="">送信者</option></select>
     <button id="showHistoryBtn">一覧表示</button>
+
+
+
+
+
+
+
+<button id="createURLBtn" style="background:#32cd32">URL作成</button>
+
+
+
+
+
+
+
+
     <button id="copyAllBtn">コピー</button>
   </div>
   <div id="history" class="history-list"></div>
@@ -203,9 +257,6 @@ async function loadData() {
   historyPlayers = (await loadFromDB("gacha_historyPlayers")) || [];
 
 
-/* ---------------------------------------------------------
-  あと修正
-   --------------------------------------------------------- */
 
 senders = (await loadFromDB("gacha_senders")) || [];
 renderSenderList();
@@ -251,12 +302,41 @@ addBtn.onclick = async () => {
       text = addText.value.trim(),
       link = addLink.value.trim();
   if (!text) { alert("内容を入力してください"); return; }
-  ITEMS.push({ rarity, text, link });
+
+
+
+
+let imageFile = document.getElementById("addImage").files[0];
+
+let originalImage = "";
+let previewImage = "";
+
+if(imageFile){
+  originalImage = await fileToBase64(imageFile);
+  previewImage = await compressImage(imageFile);
+}
+
+ITEMS.push({ 
+  rarity, 
+  text, 
+  link,
+  image:{
+    original: originalImage,
+    preview: previewImage
+  }
+});
+
+document.getElementById("addImage").value="";
+
+
+
+
+
   await saveToDB("gacha_ITEMS", ITEMS);
   addText.value = ""; addLink.value = ""; addRarity.value = "N";
   alert("追加しました！（IndexedDB に保存済）");
 };
-/* 以下、既存コードは動作変更なし（保存部分のみ DB 化） */
+/* （保存部分のみ DB 化） */
 function renderItemsInAlert(){
   alertItems.innerHTML="";
   if(ITEMS.length===0){alertItems.innerHTML="<p>ガチャ内容がありません</p>";}
@@ -346,7 +426,25 @@ function showResults(name,arr){
   let text=name+"\n";
   for(let k in counts){
     let [t]=k.split("|");
-    text+="・"+t+(counts[k]>1?" ×"+counts[k]:"")+"\n";
+  
+
+
+let foundItem = ITEMS.find(it=>it.text===t);
+
+text += "・"+t+(counts[k]>1?" ×"+counts[k]:"");
+
+if(foundItem && foundItem.image && foundItem.image.preview){
+  text += `<br><img src="${foundItem.image.preview}" style="max-width:80px;border-radius:6px;">`;
+  text += `<br><button onclick="downloadImage('${foundItem.image.original}')">画像DL</button>`;
+}
+
+text+="\n";
+
+
+
+
+
+
   }
   text+="#アリアリツール";
   let div=document.createElement("div");
@@ -380,10 +478,30 @@ function showHistory(){
   });
 }
 showHistoryBtn.onclick=showHistory;
-/* コピーボタン（変更なし） */
+/* コピーボタン（変更） */
 copyAllBtn.onclick=()=>{
   const filter=historyFilter.value;
   let grouped={};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   history.forEach(h=>{
     if(!filter||h.name===filter){
       let key=h.name+"|"+h.text;
@@ -400,6 +518,167 @@ copyAllBtn.onclick=()=>{
   if(!text){alert("コピー対象がありません");return;}
   navigator.clipboard.writeText(text).then(()=>alert("コピーしました！（最新URLも反映済）"));
 };
+
+
+createURLBtn.onclick = () => {
+  const filter = historyFilter.value;
+  if(!filter){
+    alert("人を選んでね");
+    return;
+  }
+
+  let data = history.filter(h=>h.name===filter);
+
+   let html = `
+<html>
+<head>
+<style>
+body{
+  font-family:sans-serif;
+  padding:16px;
+}
+
+
+
+
+
+
+
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap:12px;
+}
+
+/* タブレット */
+@media (max-width: 900px){
+  .grid{
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* スマホ */
+@media (max-width: 500px){
+  .grid{
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.itemBox{
+  border:1px solid #ccc;
+  padding:8px;
+  border-radius:8px;
+  text-align:center;
+}
+
+img{
+  max-width:100%;
+  border-radius:6px;
+}
+
+.bigBtn{
+  font-size:18px;
+  padding:10px 16px;
+  margin-bottom:16px;
+}
+</style>
+</head>
+<body>
+
+<h2>${filter}のガチャ結果</h2>
+
+<button class="bigBtn" onclick="downloadAll()">🌸まとめてDL</button>
+
+<div class="grid">
+
+
+
+
+
+
+<script>
+function downloadAll(){
+  const links = document.querySelectorAll('.imgLink');
+  links.forEach(link=>{
+    const a = document.createElement('a');
+    a.href = link.href;
+    a.download = 'image.png';
+    a.click();
+  });
+}
+<\/script>
+`;
+
+  data.forEach(d=>{
+    let item = ITEMS.find(it=>it.text===d.text);
+
+    let img = "";
+    let btn = "";
+    let linkBtn = "";
+
+    if(item && item.image && item.image.original){
+      img = `<br><img src="${item.image.preview}" style="max-width:120px;">`;
+
+      btn = `
+      <br>
+            <a href="${item.image.original}" download class="imgLink">
+        <button>画像DL</button>
+      </a>
+      `;
+    }
+
+    if(item && item.link){
+      linkBtn = `<br><a href="${item.link}" target="_blank">
+        <button>開く（URL）</button>
+      </a>`;
+    }
+
+  html += `
+  <div class="itemBox">
+    <p>${d.text}</p>
+    ${img}
+    ${btn}
+    ${linkBtn}
+  </div>
+`;
+
+
+
+
+
+
+
+
+  });
+
+ 
+
+
+
+html += `
+</div>
+</body>
+</html>
+`;
+
+
+  const blob = new Blob([html], {type:"text/html"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filter+"_result.html";
+  a.click();
+};
+
+
+
+
+
+
+
+
 
 
 
@@ -494,7 +773,54 @@ importBtn.onclick = () => {
   };
   input.click();
 };
-/* 画像保存（元のまま） */
+/* 画像保存 */
+
+function fileToBase64(file){
+  return new Promise(res=>{
+    const reader = new FileReader();
+    reader.onload = ()=>res(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImage(file){
+  return new Promise(resolve=>{
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = e=> img.src = e.target.result;
+
+    img.onload = ()=>{
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const scale = 0.3;
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+      resolve(canvas.toDataURL("image/png",0.6));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function downloadImage(base64){
+  const a=document.createElement("a");
+  a.href=base64;
+  a.download="gacha.png";
+  a.click();
+}
+
+
+
+
+
+
+
+
 saveImageBtn.onclick = async () => {
   if (typeof html2canvas === "undefined") {
     const script = document.createElement("script");
@@ -504,7 +830,7 @@ saveImageBtn.onclick = async () => {
     return;
   }
 
-  // ←ここから変更
+  // 変更
   const target = document.getElementById("results");      // body → results
   target.style.padding = "20px";                          // 一時的に余白確保
   const canvas = await html2canvas(target, { scale: 2, backgroundColor: null });
@@ -538,4 +864,3 @@ saveTextBtn.onclick = () => {
 </script>
 </body>
 </html>
-
