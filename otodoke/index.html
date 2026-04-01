@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌸アリアリお届けツール</title>
+
+<style>
+
+body{
+background:#fff0f5;
+font-family:"Noto Sans JP",sans-serif;
+padding:16px;
+margin:0;
+color:#333;
+}
+
+.card{
+background:#ffe4f0;
+border:1px solid #ffb6c1;
+border-radius:12px;
+padding:12px;
+margin-bottom:12px;
+}
+
+button{
+background:#ff69b4;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+}
+
+button.secondary{
+background:#ffb6c1;
+}
+
+.grid{
+display:grid;
+gap:8px;
+grid-template-columns:repeat(4,1fr);
+}
+
+@media(max-width:900px){
+.grid{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:500px){
+.grid{grid-template-columns:1fr}
+}
+
+.item{
+background:white;
+border:1px solid #ffb6c1;
+border-radius:8px;
+padding:8px;
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+img{max-width:100px;border-radius:6px}
+video{max-width:100%}
+audio{width:100%}
+
+.flex{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🌸アリアリ配布ツール</h1>
+
+<div class="card">
+<h3>簡易説明</h3>
+① 内容を追加（画像・ボイス・動画・URL）〇年〇月などのカテゴリ追加も可能<br>
+② 配布したい内容にチェック<br>
+③ HTMLまたはZIPで配布ファイル作成→DLされたファイルをそのまま送信で共有できます<br>
+④ 送信者登録してURLをすぐ開くことも可能<br>
+⑤バックアップ推奨・復元で保存背れたファイルを選択して復元可能　管理は自己責任で<br>
+
+</div>
+
+<div class="card">
+
+<h2>①内容追加</h2>
+
+<div class="flex">
+<input id="addText" placeholder="内容">
+<select id="categorySelect"></select>
+<input id="addLink" placeholder="URL">
+<input type="file" id="addFile">
+<button id="addBtn">追加</button>
+</div>
+
+<div class="flex">
+<input id="newCategory" placeholder="カテゴリ追加">
+<button id="addCategoryBtn">追加</button>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>②内容選択</h2>
+
+<div class="flex">
+<select id="filterCategory"><option value="">全て</option></select>
+<input id="search" placeholder="検索">
+</div>
+
+<br>
+
+<div id="itemList" class="grid"></div>
+
+<br>
+
+選択中：<span id="count">0</span>
+
+<br><br>
+
+<button id="createHTMLBtn">HTML作成</button>
+<button id="zipBtn">ZIP作成</button>
+
+<select id="expireSelect">
+<option value="">期限なし</option>
+<option value="15">15日</option>
+<option value="30">1ヶ月</option>
+<option value="60">2ヶ月</option>
+<option value="90">3ヶ月</option>
+<option value="180">6ヶ月</option>
+<option value="365">1年</option>
+</select>
+
+</div>
+
+<div class="card">
+
+<h2>③送信者</h2>
+
+<button id="showSenderBtn">送信者一覧表示</button>
+
+<div id="senderArea" style="display:none">
+
+<div class="flex">
+<input id="senderName" placeholder="名前">
+<input id="senderURL" placeholder="URL">
+<button id="addSenderBtn">追加</button>
+</div>
+
+<br>
+
+<div id="senderList"></div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<button id="backupBtn">バックアップ</button>
+<button id="importBtn">復元</button>
+<button id="resetBtn">リセット</button>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<script>
+
+/* DB */
+
+let db
+const DB_NAME="gachaDB"
+const STORE="gachaStore"
+
+function openDB(){
+return new Promise((resolve,reject)=>{
+const req=indexedDB.open(DB_NAME,1)
+
+req.onupgradeneeded=e=>{
+const db=e.target.result
+db.createObjectStore(STORE,{keyPath:"key"})
+}
+
+req.onsuccess=e=>{
+db=e.target.result
+resolve()
+}
+
+req.onerror=reject
+})
+}
+
+function saveDB(key,value){
+return new Promise((resolve,reject)=>{
+const tx=db.transaction(STORE,"readwrite")
+tx.objectStore(STORE).put({key,value})
+tx.oncomplete=resolve
+tx.onerror=reject
+})
+}
+
+function loadDB(key){
+return new Promise((resolve,reject)=>{
+const tx=db.transaction(STORE,"readonly")
+const req=tx.objectStore(STORE).get(key)
+req.onsuccess=()=>resolve(req.result?req.result.value:null)
+req.onerror=reject
+})
+}
+
+/* DATA */
+
+let ITEMS=[]
+let categories=[]
+let senders=[]
+
+async function init(){
+await openDB()
+
+ITEMS=await loadDB("items")||[]
+categories=await loadDB("categories")||["画像","ボイス","動画","URL"]
+senders=await loadDB("senders")||[]
+
+renderCategories()
+renderItems()
+renderSenders()
+}
+
+init()
+
+/* CATEGORY */
+
+function renderCategories(){
+
+categorySelect.innerHTML=""
+filterCategory.innerHTML='<option value="">全て</option>'
+
+categories.forEach(c=>{
+let o=document.createElement("option")
+o.textContent=c
+categorySelect.appendChild(o)
+
+let o2=document.createElement("option")
+o2.textContent=c
+filterCategory.appendChild(o2)
+})
+
+}
+
+addCategoryBtn.onclick=async()=>{
+
+let val=newCategory.value.trim()
+if(!val)return
+
+categories.push(val)
+await saveDB("categories",categories)
+
+newCategory.value=""
+renderCategories()
+
+}
+
+/* FILE */
+
+function fileToBase64(file){
+return new Promise(res=>{
+const r=new FileReader()
+r.onload=()=>res(r.result)
+r.readAsDataURL(file)
+})
+}
+
+/* ADD ITEM */
+
+addBtn.onclick=async()=>{
+
+let text=addText.value.trim()
+let category=categorySelect.value
+let link=addLink.value.trim()
+let file=addFile.files[0]
+
+let data=""
+let type=""
+
+if(file){
+data=await fileToBase64(file)
+
+if(file.type.startsWith("image"))type="image"
+if(file.type.startsWith("audio"))type="audio"
+if(file.type.startsWith("video"))type="video"
+}
+
+ITEMS.push({text,category,link,data,type})
+
+await saveDB("items",ITEMS)
+
+renderItems()
+
+}
+
+/* RENDER */
+
+function renderItems(){
+
+itemList.innerHTML=""
+
+let s=search.value
+let cat=filterCategory.value
+
+ITEMS.forEach((it,i)=>{
+
+if(cat && it.category!==cat)return
+if(s && !it.text.includes(s))return
+
+let preview=""
+
+if(it.type==="image")preview=`<img src="${it.data}">`
+if(it.type==="audio")preview=`<audio controls src="${it.data}"></audio>`
+if(it.type==="video")preview=`<video controls src="${it.data}"></video>`
+
+let div=document.createElement("div")
+div.className="item"
+
+div.innerHTML=`
+<label>
+<input type="checkbox" value="${i}">
+${it.text}
+</label>
+${preview}
+`
+
+itemList.appendChild(div)
+
+})
+
+updateCount()
+
+}
+
+search.oninput=renderItems
+filterCategory.onchange=renderItems
+
+function updateCount(){
+count.textContent=document.querySelectorAll("#itemList input:checked").length
+}
+
+document.addEventListener("change",e=>{
+if(e.target.closest("#itemList"))updateCount()
+})
+
+/* HTML作成 */
+
+createHTMLBtn.onclick=()=>{
+
+let checks=[...document.querySelectorAll("#itemList input:checked")]
+if(!checks.length)return alert("選択してね")
+
+let expire=expireSelect.value
+let expireScript=""
+
+if(expire){
+
+expireScript=`
+<script>
+let limit=${expire}*24*60*60*1000
+let start=Date.now()
+
+if(Date.now()-start>limit){
+document.body.innerHTML="期限切れです"
+}
+<\/script>
+`
+}
+
+let html=`<html><body style="background:#fff0f5;font-family:sans-serif;padding:20px">
+
+<h2>🌸お届けBOX</h2>
+
+<button onclick="downloadAll()">まとめて保存</button>
+`
+
+checks.forEach(c=>{
+
+let it=ITEMS[c.value]
+
+html+=`<div style="margin:20px 0"><b>${it.text}</b><br>`
+
+if(it.type==="image"){
+html+=`<img src="${it.data}" style="max-width:200px"><br>
+<a href="${it.data}" download>画像保存</a>`
+}
+
+if(it.type==="audio"){
+html+=`<audio controls src="${it.data}"></audio><br>
+<a href="${it.data}" download>保存</a>`
+}
+
+if(it.type==="video"){
+html+=`<video controls src="${it.data}" width="300"></video><br>
+<a href="${it.data}" download>保存</a>`
+}
+
+if(it.link){
+html+=`<br><a href="${it.link}" target="_blank">URLを開く</a>`
+}
+
+html+="</div>"
+
+})
+
+html+=`
+<script>
+function downloadAll(){
+document.querySelectorAll('a[download]').forEach(a=>a.click())
+}
+<\/script>
+${expireScript}
+</body></html>`
+
+let blob=new Blob([html],{type:"text/html"})
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+a.download="present.html"
+a.click()
+
+}
+
+/* ZIP */
+
+zipBtn.onclick=async()=>{
+
+let checks=[...document.querySelectorAll("#itemList input:checked")]
+if(!checks.length)return alert("選択してね")
+
+let zip=new JSZip()
+
+checks.forEach(c=>{
+
+let it=ITEMS[c.value]
+
+if(it.data){
+let base64=it.data.split(",")[1]
+zip.file(it.text,base64,{base64:true})
+}
+
+})
+
+let blob=await zip.generateAsync({type:"blob"})
+
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="present.zip"
+a.click()
+
+}
+
+/* SENDERS */
+
+showSenderBtn.onclick=()=>{
+senderArea.style.display=senderArea.style.display==="none"?"block":"none"
+}
+
+addSenderBtn.onclick=async()=>{
+
+let name=senderName.value.trim()
+let url=senderURL.value.trim()
+
+if(!name||!url)return alert("入力してね")
+
+senders.push({name,url})
+await saveDB("senders",senders)
+
+senderName.value=""
+senderURL.value=""
+
+renderSenders()
+
+}
+
+function renderSenders(){
+
+senderList.innerHTML=""
+
+senders.forEach((s,i)=>{
+
+let div=document.createElement("div")
+div.className="item"
+
+div.innerHTML=`
+<b>${s.name}</b>
+
+<button onclick="window.open('${s.url}','_blank')">開く</button>
+
+<button onclick="editSender(${i})">編集</button>
+
+<button onclick="deleteSender(${i})">削除</button>
+`
+
+senderList.appendChild(div)
+
+})
+
+}
+
+function editSender(i){
+
+let name=prompt("名前",senders[i].name)
+let url=prompt("URL",senders[i].url)
+
+if(!name||!url)return
+
+senders[i]={name,url}
+saveDB("senders",senders)
+
+renderSenders()
+
+}
+
+function deleteSender(i){
+
+if(confirm("削除しますか？")){
+senders.splice(i,1)
+saveDB("senders",senders)
+renderSenders()
+}
+
+}
+
+/* BACKUP */
+
+backupBtn.onclick=()=>{
+
+let data={
+ITEMS,
+categories,
+senders
+}
+
+let blob=new Blob([JSON.stringify(data)],{type:"application/json"})
+
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="ari_backup.json"
+a.click()
+
+}
+
+/* IMPORT */
+
+importBtn.onclick=()=>{
+
+let input=document.createElement("input")
+input.type="file"
+
+input.onchange=e=>{
+
+let file=e.target.files[0]
+let reader=new FileReader()
+
+reader.onload=async()=>{
+
+let data=JSON.parse(reader.result)
+
+ITEMS=data.ITEMS||[]
+categories=data.categories||[]
+senders=data.senders||[]
+
+await saveDB("items",ITEMS)
+await saveDB("categories",categories)
+await saveDB("senders",senders)
+
+location.reload()
+
+}
+
+reader.readAsText(file)
+
+}
+
+input.click()
+
+}
+
+/* RESET */
+
+resetBtn.onclick=async()=>{
+
+if(!confirm("全データ削除しますか？"))return
+
+ITEMS=[]
+categories=[]
+senders=[]
+
+await saveDB("items",ITEMS)
+await saveDB("categories",categories)
+await saveDB("senders",senders)
+
+location.reload()
+
+}
+
+</script>
+
+</body>
+</html>
