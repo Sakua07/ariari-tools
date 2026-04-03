@@ -6,7 +6,6 @@
 <title>🌸アリアリお届けツール</title>
 
 <style>
-
 body{
 background:#fff0f5;
 font-family:"Noto Sans JP",sans-serif;
@@ -70,7 +69,6 @@ display:flex;
 gap:8px;
 flex-wrap:wrap;
 }
-
 </style>
 </head>
 
@@ -80,20 +78,15 @@ flex-wrap:wrap;
 
 <div class="card">
 <h3>簡易説明</h3>
-① 内容を追加（画像・ボイス・動画・URL）〇年〇月などのカテゴリ追加も可能<br>
-② 配布したい内容にチェック<br>
-③ HTMLまたはZIPで配布ファイル作成→DLされたファイルをそのまま送信で共有できます<br>
-④ 送信者登録して送信先をすぐ開くことも可能<br>
-⑤バックアップ推奨・復元で保存背れたファイルを選択して復元可能　管理は自己責任で<br>
-
+① 内容を追加（画像・ボイス・動画・URL）<br>
+② 配布したい内容にチェック「📤共有する」で送信（スマホ→共有メニュー / PC→DLになります）<br>
+③ 送信者登録でよく送る方を登録、バックアップ推奨（自己責任）<br>
 </div>
 
 <div class="card">
-
 <h2>①内容追加</h2>
 
 <div class="flex">
-<input id="addText" placeholder="内容">
 <select id="categorySelect"></select>
 <input id="addLink" placeholder="URL">
 <input type="file" id="addFile">
@@ -103,17 +96,16 @@ flex-wrap:wrap;
 <div class="flex">
 <input id="newCategory" placeholder="カテゴリ追加">
 <button id="addCategoryBtn">追加</button>
+<button onclick="deleteCategory()" class="secondary">削除</button>
 </div>
 
 </div>
 
 <div class="card">
-
 <h2>②内容選択</h2>
 
 <div class="flex">
 <select id="filterCategory"><option value="">全て</option></select>
-<input id="search" placeholder="検索">
 </div>
 
 <br>
@@ -126,23 +118,11 @@ flex-wrap:wrap;
 
 <br><br>
 
-<button id="createHTMLBtn">配布ファイル作成</button>
-<button id="zipBtn">ZIP作成</button>
-
-<select id="expireSelect">
-<option value="">期限なし</option>
-<option value="15">15日</option>
-<option value="30">1ヶ月</option>
-<option value="60">2ヶ月</option>
-<option value="90">3ヶ月</option>
-<option value="180">6ヶ月</option>
-<option value="365">1年</option>
-</select>
+<button id="createHTMLBtn">📤共有する</button>
 
 </div>
 
 <div class="card">
-
 <h2>③送信者登録</h2>
 
 <button id="showSenderBtn">送信者一覧表示</button>
@@ -160,23 +140,18 @@ flex-wrap:wrap;
 <div id="senderList"></div>
 
 </div>
-
 </div>
 
 <div class="card">
-
 <button id="backupBtn">バックアップ</button>
 <button id="importBtn">復元</button>
 <button id="resetBtn">リセット</button>
-
+<button onclick="deleteOldItems()" class="secondary">2ヶ月前削除</button>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <script>
 
 /* DB */
-
 let db
 const DB_NAME="gachaDB"
 const STORE="gachaStore"
@@ -219,6 +194,8 @@ req.onerror=reject
 
 /* DATA */
 
+const DEFAULT_CATEGORIES=["画像","ボイス","動画","URL"]
+
 let ITEMS=[]
 let categories=[]
 let senders=[]
@@ -227,7 +204,13 @@ async function init(){
 await openDB()
 
 ITEMS=await loadDB("items")||[]
-categories=await loadDB("categories")||["画像","ボイス","動画","URL"]
+
+
+categories = await loadDB("categories")
+
+if(!categories || categories.length === 0){
+  categories = [...DEFAULT_CATEGORIES]
+}
 senders=await loadDB("senders")||[]
 
 renderCategories()
@@ -240,7 +223,6 @@ init()
 /* CATEGORY */
 
 function renderCategories(){
-
 categorySelect.innerHTML=""
 filterCategory.innerHTML='<option value="">全て</option>'
 
@@ -253,20 +235,40 @@ let o2=document.createElement("option")
 o2.textContent=c
 filterCategory.appendChild(o2)
 })
-
 }
 
 addCategoryBtn.onclick=async()=>{
-
 let val=newCategory.value.trim()
 if(!val)return
 
 categories.push(val)
 await saveDB("categories",categories)
 
+categories = await loadDB("categories")
+
+if(!categories || categories.length === 0){
+  categories = [...DEFAULT_CATEGORIES]
+}
+
+
+
 newCategory.value=""
 renderCategories()
+}
 
+function deleteCategory(){
+let target=categorySelect.value
+
+if(DEFAULT_CATEGORIES.includes(target)){
+alert("このカテゴリは削除できません")
+return
+}
+
+if(!confirm(target+" を削除しますか？"))return
+
+categories=categories.filter(c=>c!==target)
+saveDB("categories",categories)
+renderCategories()
 }
 
 /* FILE */
@@ -279,11 +281,9 @@ r.readAsDataURL(file)
 })
 }
 
-/* ADD ITEM */
+/* ADD */
 
 addBtn.onclick=async()=>{
-
-let text=addText.value.trim()
 let category=categorySelect.value
 let link=addLink.value.trim()
 let file=addFile.files[0]
@@ -293,36 +293,33 @@ let type=""
 
 if(file){
 data=await fileToBase64(file)
-
 if(file.type.startsWith("image"))type="image"
 if(file.type.startsWith("audio"))type="audio"
 if(file.type.startsWith("video"))type="video"
 }
 
-ITEMS.push({text,category,link,data,type})
+ITEMS.push({
+category,
+link,
+data,
+type,
+date:Date.now()
+})
 
 await saveDB("items",ITEMS)
-
 renderItems()
-
 }
 
 /* RENDER */
 
 function renderItems(){
-
 itemList.innerHTML=""
-
-let s=search.value
 let cat=filterCategory.value
 
 ITEMS.forEach((it,i)=>{
-
 if(cat && it.category!==cat)return
-if(s && !it.text.includes(s))return
 
 let preview=""
-
 if(it.type==="image")preview=`<img src="${it.data}">`
 if(it.type==="audio")preview=`<audio controls src="${it.data}"></audio>`
 if(it.type==="video")preview=`<video controls src="${it.data}"></video>`
@@ -333,20 +330,17 @@ div.className="item"
 div.innerHTML=`
 <label>
 <input type="checkbox" value="${i}">
-${it.text}
+${it.category}
 </label>
 ${preview}
 `
 
 itemList.appendChild(div)
-
 })
 
 updateCount()
-
 }
 
-search.oninput=renderItems
 filterCategory.onchange=renderItems
 
 function updateCount(){
@@ -357,111 +351,70 @@ document.addEventListener("change",e=>{
 if(e.target.closest("#itemList"))updateCount()
 })
 
-/* HTML作成 */
+/* 2ヶ月削除 */
 
-createHTMLBtn.onclick=()=>{
+async function deleteOldItems(){
+if(!confirm("2ヶ月前のデータ削除する？"))return
 
+const now=Date.now()
+const limit=60*24*60*60*1000
+
+ITEMS=ITEMS.filter(it=> !it.date || (now-it.date)<limit)
+
+await saveDB("items",ITEMS)
+renderItems()
+
+alert("削除したよ！")
+}
+
+/* 共有 */
+
+createHTMLBtn.onclick=async()=>{
 let checks=[...document.querySelectorAll("#itemList input:checked")]
 if(!checks.length)return alert("選択してね")
 
-let expire=expireSelect.value
-let expireScript=""
+let text="🌸お届けBOX\n\n"
+let files=[]
 
-if(expire){
-
-expireScript=`
-<script>
-let limit=${expire}*24*60*60*1000
-let start=Date.now()
-
-if(Date.now()-start>limit){
-document.body.innerHTML="期限切れです"
-}
-<\/script>
-`
-}
-
-let html=`<html><body style="background:#fff0f5;font-family:sans-serif;padding:20px">
-
-<h2>🌸お届けBOX</h2>
-
-<button onclick="downloadAll()">まとめて保存</button>
-`
-
-checks.forEach(c=>{
-
+for(let c of checks){
 let it=ITEMS[c.value]
 
-html+=`<div style="margin:20px 0"><b>${it.text}</b><br>`
-
-if(it.type==="image"){
-html+=`<img src="${it.data}" style="max-width:200px"><br>
-<a href="${it.data}" download>画像保存</a>`
-}
-
-if(it.type==="audio"){
-html+=`<audio controls src="${it.data}"></audio><br>
-<a href="${it.data}" download>保存</a>`
-}
-
-if(it.type==="video"){
-html+=`<video controls src="${it.data}" width="300"></video><br>
-<a href="${it.data}" download>保存</a>`
-}
-
-if(it.link){
-html+=`<br><a href="${it.link}" target="_blank">URLを開く</a>`
-}
-
-html+="</div>"
-
-})
-
-html+=`
-<script>
-function downloadAll(){
-document.querySelectorAll('a[download]').forEach(a=>a.click())
-}
-<\/script>
-${expireScript}
-</body></html>`
-
-let blob=new Blob([html],{type:"text/html"})
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-a.download="present.html"
-a.click()
-
-}
-
-/* ZIP */
-
-zipBtn.onclick=async()=>{
-
-let checks=[...document.querySelectorAll("#itemList input:checked")]
-if(!checks.length)return alert("選択してね")
-
-let zip=new JSZip()
-
-checks.forEach(c=>{
-
-let it=ITEMS[c.value]
+text+=`・${it.category}\n`
+if(it.link) text+=it.link+"\n"
 
 if(it.data){
-let base64=it.data.split(",")[1]
-zip.file(it.text,base64,{base64:true})
+let res=await fetch(it.data)
+let blob=await res.blob()
+files.push(new File([blob],"file",{type:blob.type}))
 }
 
-})
+text+="\n"
+}
 
-let blob=await zip.generateAsync({type:"blob"})
+text+="🐜アリアリツール"
 
-let a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download="present.zip"
-a.click()
+if(navigator.share){
+try{
+await navigator.share({text,files:files.length?files:undefined})
+}catch{}
+}else{
+navigator.clipboard.writeText(text)
+alert("コピーしたよ！")
+}
+}
 
+/* RESET */
+
+resetBtn.onclick=async()=>{
+if(!confirm("データ削除する？"))return
+
+ITEMS=[]
+senders=[]
+
+await saveDB("items",ITEMS)
+await saveDB("senders",senders)
+
+location.reload()
 }
 
 /* SENDERS */
@@ -471,7 +424,6 @@ senderArea.style.display=senderArea.style.display==="none"?"block":"none"
 }
 
 addSenderBtn.onclick=async()=>{
-
 let name=senderName.value.trim()
 let url=senderURL.value.trim()
 
@@ -484,95 +436,52 @@ senderName.value=""
 senderURL.value=""
 
 renderSenders()
-
 }
 
 function renderSenders(){
-
 senderList.innerHTML=""
 
 senders.forEach((s,i)=>{
-
 let div=document.createElement("div")
 div.className="item"
 
 div.innerHTML=`
 <b>${s.name}</b>
-
 <button onclick="window.open('${s.url}','_blank')">開く</button>
-
-<button onclick="editSender(${i})">編集</button>
-
-<button onclick="deleteSender(${i})">削除</button>
 `
 
 senderList.appendChild(div)
-
 })
-
-}
-
-function editSender(i){
-
-let name=prompt("名前",senders[i].name)
-let url=prompt("URL",senders[i].url)
-
-if(!name||!url)return
-
-senders[i]={name,url}
-saveDB("senders",senders)
-
-renderSenders()
-
-}
-
-function deleteSender(i){
-
-if(confirm("削除しますか？")){
-senders.splice(i,1)
-saveDB("senders",senders)
-renderSenders()
-}
-
 }
 
 /* BACKUP */
 
 backupBtn.onclick=()=>{
-
-let data={
-ITEMS,
-categories,
-senders
-}
+let data={ITEMS,categories,senders}
 
 let blob=new Blob([JSON.stringify(data)],{type:"application/json"})
-
 let a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download="ari_backup.json"
-a.click()
 
+a.href=URL.createObjectURL(blob)
+a.download="backup.json"
+a.click()
 }
 
 /* IMPORT */
 
 importBtn.onclick=()=>{
-
 let input=document.createElement("input")
 input.type="file"
 
 input.onchange=e=>{
-
 let file=e.target.files[0]
 let reader=new FileReader()
 
 reader.onload=async()=>{
-
 let data=JSON.parse(reader.result)
 
 ITEMS=data.ITEMS||[]
-categories=data.categories||[]
+categories=data.categories||DEFAULT_CATEGORIES
 senders=data.senders||[]
 
 await saveDB("items",ITEMS)
@@ -580,46 +489,29 @@ await saveDB("categories",categories)
 await saveDB("senders",senders)
 
 location.reload()
-
 }
 
 reader.readAsText(file)
-
 }
 
 input.click()
-
-}
-
-/* RESET */
-
-resetBtn.onclick=async()=>{
-
-if(!confirm("全データ削除しますか？"))return
-
-ITEMS=[]
-categories=[]
-senders=[]
-
-await saveDB("items",ITEMS)
-await saveDB("categories",categories)
-await saveDB("senders",senders)
-
-location.reload()
-
 }
 
 </script>
-⚠️注意
+<h8>⚠️注意</h8>
+<p>
+このツールはローカル環境（あなたの端末内）で動いています！<br><br>
 
-このツールはブラウザのローカル保存（端末内）で動作します。
+・ファイルを選択で画像は保存できますが、保存容量は端末に依存します<br>
+・画像サイズが大きすぎると動作が重くなったり保存できない場合があります<br>
+・データはこの端末にのみ保存されます<br><br>
 
-・画像、動画、ボイスなどのファイルは端末内に保存されます  
-・保存できる容量は端末やブラウザによって異なります  
-・動画など容量の大きいファイルは保存できない場合があります  
+※安心して使えますが、大きすぎる画像の入れすぎには注意してね🐜
+管理は自己責任でお願いします🌸
+</p>
 
-※大きすぎるファイルの使用にはご注意ください
-※データ管理は自己責任でお願いします
+ <br>
+
 
 </body>
 </html>
