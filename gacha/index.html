@@ -50,8 +50,8 @@
   <h2>～使い方～</h2>
 <h5>①🐝ガチャの中身を入れて追加ボタンを押したら保存されるよ！※バックアップ推奨インポートで保存されたファイル選択で復元</h5>
 <h5>②🐝ガチャ実行で引く人の名前入力後回数指定でガチャが回せるよ！</h5>
-<h5>③🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！</h5>
-<h5>🐝ガチャを引いた後にURLを入れてももう一度一覧表示ボタンを押せば履歴コピーに反映されるよ！</h5>
+<h5>③🐝履歴で人を選んで→一覧表示→コピーで設定したURLがコピー！結果欄には表示されないよ！共有で画像一括DLかスマホなら共有メニューがでるよ</h5>
+<h5>🐝ガチャを引いた後にURLや画像を入れてももう一度一覧表示ボタンを押せば履歴コピーや共有に反映されるよ！</h5>
 <h8>⚠️注意</h8>
 <p>
 このツールはローカル環境（あなたの端末内）で動いています！<br><br>
@@ -136,15 +136,9 @@
   <b>🐜使い方メモ</b><br><br>
 
 　送信者を選ぶ→一覧表示<br><br>
-  　URL作成 → 画像をまとめてダウンロードできるページがダウンロードされるよ！<br><br>
+  　共有 → PCでは画像をまとめてダウンロードでき、スマホでは共有メニューが開いて別アプリなどに送れるよ<br><br>
 
-  そのファイルをそのまま送れば<br>
-  相手も開いて画像保存できるよ🌸<br><br>
-
-  <small>※リンクではなく「ファイル」がダウンロードされます</small>
-</div>
-
-
+  
 
   <div class="flex-row">
     <select id="historyFilter"><option value="">送信者</option></select>
@@ -156,7 +150,8 @@
 
 
 
-<button id="createURLBtn" style="background:#32cd32">URL作成</button>
+<button id="createURLBtn" style="background:#32cd32">📤共有（DL）
+</button>
 
 
 
@@ -673,14 +668,29 @@ html += `
 `;
 
 
-  const blob = new Blob([html], {type:"text/html"});
-  const url = URL.createObjectURL(blob);
+ const blob = new Blob([html], {type:"text/html"});
+const file = new File([blob], filter+"_result.html", {
+  type: "text/html"
+});
 
+// ▼ 共有できる場合（スマホ）
+if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+  navigator.share({
+    title: "ガチャ結果",
+    text: filter+"のガチャ結果だよ！",
+    files: [file]
+  }).catch(()=>{});
+} else {
+  // ▼ PCなど → ダウンロード
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filter+"_result.html";
   a.click();
-};
+
+  // ▼ おまけ：説明出すと親切
+  alert("ダウンロードされたファイルをそのまま送ればOK！");
+}
 
 
 
