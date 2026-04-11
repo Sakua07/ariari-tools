@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>重複削除ツール強化版</title>
+<style>
+  body {
+    font-family: sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 150px;
+    font-size: 16px;
+    padding: 10px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  #output {
+    margin-top: 20px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+  }
+  input {
+    margin-top: 10px;
+    padding: 5px;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<h2>重複削除ツール（個数無視＋画像保存）</h2>
+
+<textarea id="input" placeholder="例：
+A 3個
+A
+B ×4
+B
+C"></textarea>
+
+<br>
+
+<button onclick="removeDuplicates()">実行</button>
+<button onclick="resetAll()">リセット</button>
+
+<br>
+
+<input id="filename" placeholder="画像ファイル名（例：リスト）">
+
+<button onclick="saveImage()">画像保存</button>
+
+<div id="output"></div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+// 個数表記削除
+function cleanText(text) {
+  return text
+    .replace(/\s*\d+個$/, "")
+    .replace(/\s*[×xX]\d+$/, "")
+    .trim();
+}
+
+// 実行
+function removeDuplicates() {
+  const input = document.getElementById("input").value;
+
+  const lines = input
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line !== "");
+
+  const seen = new Set();
+  const result = [];
+
+  lines.forEach(line => {
+    const normalized = cleanText(line);
+
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      result.push(normalized);
+    }
+  });
+
+  const outputText =
+    result.join("\n") +
+    "\n\n種類数：" + result.length;
+
+  document.getElementById("output").textContent = outputText;
+}
+
+// リセット
+function resetAll() {
+  document.getElementById("input").value = "";
+  document.getElementById("output").textContent = "";
+  document.getElementById("filename").value = "";
+}
+
+// 画像保存
+function saveImage() {
+  const text = document.getElementById("output").textContent;
+  if (!text) {
+    alert("先に実行してね！");
+    return;
+  }
+
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const lines = text.split("\n");
+  const lineHeight = 30;
+
+  canvas.width = 400;
+  canvas.height = lines.length * lineHeight + 20;
+
+  // 背景
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 文字
+  ctx.fillStyle = "#000000";
+  ctx.font = "20px sans-serif";
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, 10, 30 + i * lineHeight);
+  });
+
+  const filename =
+    document.getElementById("filename").value || "list";
+
+  const link = document.createElement("a");
+  link.download = filename + ".png";
+  link.href = canvas.toDataURL();
+  link.click();
+}
+</script>
+
+</body>
+</html>
