@@ -76,7 +76,7 @@
   </div>
   <div class="flex-row">
     <button id="showItemsBtn" class="secondary">ガチャ内容一覧表示</button>
-    <button id="resetBtn" class="secondary">リセット</button>
+    <button id="resetBtn" class="secondary">初期化</button>
     <button id="backupBtn" class="secondary">バックアップ</button>
     <button id="importBtn" class="secondary">インポート</button>
   </div>
@@ -95,7 +95,7 @@
     <button id="clearBtn" class="secondary">結果リセット</button>
     <button id="saveImageBtn" style="background:#ffb6c1">画像を保存</button>
     <button id="shareBtn" style="background:#1d9bf0">Xで共有</button>
-    <button id="saveTextBtn" style="background:#ff69b4">文章保存</button>
+    <button id="saveTextBtn" style="background:#ff69b4">結果文章コピー</button>
   </div>
 </div>
 <div class="card">
@@ -160,7 +160,7 @@ function loadFromDB(key) {
   });
 }
 /* ---------------------------------------------------------
-   （ DB 化）
+   元のコード開始（ただし保存部分だけ DB 化）
    --------------------------------------------------------- */
 let ITEMS = [], history = [], playerNames = [], historyPlayers = [];
 const historyEl = document.getElementById("history");
