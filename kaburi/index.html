@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>重複削除リストツール</title>
+<style>
+  body {
+    font-family: sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 150px;
+    font-size: 16px;
+    padding: 10px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #output {
+    margin-top: 20px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<h2>重複削除リストツール</h2>
+
+<p>1行ずつ入力してね</p>
+<textarea id="input" placeholder="例：
+りんご
+みかん
+りんご
+バナナ"></textarea>
+
+<br>
+<button onclick="removeDuplicates()">重複を削除して表示</button>
+
+<div id="output"></div>
+
+<script>
+function removeDuplicates() {
+  const input = document.getElementById("input").value;
+
+  // 改行で分割 → 空白削除 → 空行除外
+  const list = input
+    .split("\n")
+    .map(item => item.trim())
+    .filter(item => item !== "");
+
+  // 重複削除
+  const uniqueList = [...new Set(list)];
+
+  // 表示
+  document.getElementById("output").textContent =
+    uniqueList.join("\n");
+}
+</script>
+
+</body>
+</html>
