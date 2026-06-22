@@ -300,13 +300,19 @@ function roll(times){
 }
 function showResults(name,arr){
   results.innerHTML="";
-  let counts={};
-  arr.forEach(r=>{counts[r.text+"|"+(r.link||"")]=(counts[r.text+"|"+(r.link||"")]|0)+1;});
+let counts={};
+arr.forEach(r=>{
+    const key = r.rarity + "|" + r.text + "|" + (r.link || "");
+    counts[key] = (counts[key] || 0) + 1;
+});
+
   let text=name+"\n";
-  for(let k in counts){
-    let [t]=k.split("|");
-    text+="・"+t+(counts[k]>1?" ×"+counts[k]:"")+"\n";
-  }
+for(let k in counts){
+    let [rarity,textItem] = k.split("|");
+    text += "・" + rarity + "　" + textItem;
+    if(counts[k] > 1) text += " ×" + counts[k];
+    text += "\n";
+}
   text+="#アリアリツール";
   let div=document.createElement("div");
   div.className="item";
@@ -324,17 +330,18 @@ function showHistory(){
   let grouped={};
   history.forEach(h=>{
     if(!f||h.name===f){
-      let key=h.name+"|"+h.text;
+let key=h.name+"|"+h.rarity+"|"+h.text;
       grouped[key]=(grouped[key]||0)+1;
     }
   });
   Object.keys(grouped).forEach(k=>{
-    let [name,text]=k.split("|");
+   let [name,rarity,text]=k.split("|");
+
     let found=ITEMS.find(it=>it.text===text);
     let link=found?found.link:"";
     let div=document.createElement("div");
     div.className="item";
-    div.innerHTML=`<span class="msg">${name}<br>・${text}${grouped[k]>1?" ×"+grouped[k]:""}${link?"<br><small>URL: "+link+"</small>":""}</span>`;
+div.innerHTML=`<span class="msg">${name}<br>・${rarity}　${text}${grouped[k]>1?" ×"+grouped[k]:""}${link?"<br><small>URL: "+link+"</small>":""}</span>`;
     historyEl.appendChild(div);
   });
 }
@@ -345,16 +352,18 @@ copyAllBtn.onclick=()=>{
   let grouped={};
   history.forEach(h=>{
     if(!filter||h.name===filter){
-      let key=h.name+"|"+h.text;
+    let key=h.name+"|"+h.rarity+"|"+h.text;
+  
       grouped[key]=(grouped[key]||0)+1;
     }
   });
   let text="";
   Object.entries(grouped).forEach(([k,c])=>{
-    let [n,t]=k.split("|");
+let [n,r,t]=k.split("|");
     let found=ITEMS.find(it=>it.text===t);
     let l=found?found.link:"";
-    text+=`${n}\n・${t}${c>1?" ×"+c:""}${l?`\n  URL: ${l}`:""}\n`;
+    text+=`${n}\n【${r}】 ${t}
+${c>1?" ×"+c:""}${l?`\n  URL: ${l}`:""}\n`;
   });
   if(!text){alert("コピー対象がありません");return;}
   navigator.clipboard.writeText(text).then(()=>alert("コピーしました！（最新URLも反映済）"));
