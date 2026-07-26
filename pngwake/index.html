@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRIAM・X向け 画像分割ツール</title>
+
+  <!-- Google Fonts: パステル系 UI によく合う丸ゴシック体 (Zen Maru Gothic) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- JSZip: 画像を一括ZIPダウンロードするためのライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       1. 基本設定 & テーマ変数 (かわいいパステルピンク系)
+       ========================================================================== */
+    :root {
+      --primary-color: #ff9ebb;       /* メインピンク */
+      --primary-hover: #ff85a8;       /* ホバー時ピンク */
+      --primary-light: #fff0f4;       /* 薄いピンク背景 */
+      --secondary-color: #79c9fa;     /* アクセント用パステルブルー */
+      --secondary-hover: #5cbbf8;
+      --bg-color: #fff9fb;            /* 全体背景 */
+      --card-bg: #ffffff;             /* カード背景 */
+      --text-main: #5a4b51;           /* メイン文字色 (少し柔らかいブラウン系) */
+      --text-muted: #9e8d93;          /* サブ文字色 */
+      --border-color: #ffd2e0;        /* 枠線 */
+      --border-radius: 18px;          /* 角丸の基本値 */
+      --border-radius-sm: 10px;
+      --shadow-sm: 0 4px 12px rgba(255, 158, 187, 0.15);
+      --shadow-md: 0 8px 24px rgba(255, 158, 187, 0.25);
+      --font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', Quicksand, sans-serif;
+    }
+
+    /* 全体初期化 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 20px 12px 40px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* アプリケーションコンテナ */
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ヘッダー */
+    header {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--primary-color);
+      text-shadow: 2px 2px 0px #fff, 4px 4px 0px var(--border-color);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    /* カードデザインのベース */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      padding: 24px;
+      border: 2px solid var(--border-color);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px dashed var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .card-title span.icon {
+      background: var(--primary-light);
+      color: var(--primary-color);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    /* ==========================================================================
+       2. UI コンポーネント (ボタン, フォーム, メッセージ)
+       ========================================================================== */
+    /* ボタン基本スタイル */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-family);
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .btn-lg {
+      padding: 14px 32px;
+      font-size: 1.15rem;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary-color);
+      color: #ffffff;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--secondary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--text-main);
+      border: 2px solid var(--border-color);
+    }
+
+    .btn-outline:hover {
+      background-color: var(--primary-light);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* アラート・バナー表示 */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--border-radius-sm);
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .alert-warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+
+    .alert-danger {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .alert-show {
+      display: block;
+    }
+
+    /* ==========================================================================
+       3. 各エリアごとのスタイル
+       ========================================================================== */
+    /* --- (1) アップロードエリア --- */
+    .drop-zone {
+      border: 3px dashed var(--primary-color);
+      border-radius: var(--border-radius);
+      background-color: var(--primary-light);
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      background-color: #ffe4ed;
+      border-color: var(--primary-hover);
+      transform: scale(1.01);
+    }
+
+    .drop-zone p {
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .drop-zone p.recommended {
+      color: var(--primary-color);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* --- (2) 元画像プレビュー & ガイド枠付きエリア --- */
+    .source-preview-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .image-wrapper {
+      position: relative;
+      max-width: 100%;
+      overflow: hidden;
+      border-radius: var(--border-radius-sm);
+      border: 2px solid var(--border-color);
+      background-color: #eee;
+      display: inline-block;
+    }
+
+    .image-wrapper img {
+      display: block;
+      max-width: 100%;
+      max-height: 400px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    /* 分割位置ガイド線（キャンバス/画像上にオーバーレイ表示） */
+    .guide-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* 下の画像操作を邪魔しない */
+      display: grid;
+    }
+
+    .guide-grid-cell {
+      border: 1px dashed rgba(255, 255, 255, 0.85);
+      box-shadow: inset 0 0 0 1px rgba(255, 120, 160, 0.6);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .image-info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    /* --- (3) 設定フォームエリア --- */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .input-group input[type="number"],
+    .input-group input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      font-family: var(--font-family);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* --- (4) 分割プレビュー表示エリア --- */
+    .split-preview-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 16px;
+      min-height: 100px;
+    }
+
+    .preview-card {
+      position: relative;
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      max-width: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .preview-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--primary-color);
+    }
+
+    .preview-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .preview-card .badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: bold;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .preview-card .dimensions {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 4px 0;
+      text-align: center;
+    }
+
+    /* --- (5) バックアップ・保存エリア --- */
+    .backup-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    /* --- (6) モーダル (プレビュー拡大用) --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      max-width: 90%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      box-shadow: var(--shadow-md);
+    }
+
+    .modal-content img {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: var(--border-radius-sm);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* --- (7) ローディングオーバーレイ --- */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      gap: 16px;
+      display: none;
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* レスポンシブ微調整 */
+    @media (max-width: 600px) {
+      .card { padding: 16px; }
+      .settings-grid { grid-template-columns: 1fr 1fr; }
+      .settings-actions { flex-direction: column; align-items: stretch; }
+      .backup-controls { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- ヘッダー -->
+    <header>
+      <h1>🌸 IRIAM・X向け 画像分割ツール 🌸</h1>
+      <p>ヘッダーや連投画像をきれいに分割できます</p>
+    </header>
+
+    <!-- エラー・警告バナーメッセージエリア -->
+    <div id="alertWarning" class="alert alert-warning"></div>
+    <div id="alertError" class="alert alert-danger"></div>
+
+    <!-- 1. 画像アップロードセクション -->
+    <section class="card">
+      <h2 class="card-title"><span class="icon">1</span> 画像の選択</h2>
+      <div id="dropZone" class="drop-zone">
+        <p class="recommended">4636 × 1600 px の画像をアップロードしてください</p>
+        <p>ここに画像をドラッグ＆ドロップ<br>または</p>
+        <button type="button" class="btn btn-primary" style="margin-top: 8px;">
+          📂 画像を選択する
+        </button>
+        <input type="file" id="fileInput" accept="image/png, image/jpeg, image/jpg">
+      </div>
+
+      <!-- 元画像プレビュー領域 -->
+      <div id="sourcePreviewContainer" class="source-preview-container" style="display: none;">
+        <div class="image-wrapper" id="imageWrapper">
+          <img id="sourceImage" src="" alt="元画像プレビュー">
+          <!-- 分割位置ガイド表示 -->
+          <div id="guideOverlay" class="guide-overlay"></div>
+        </div>
+        <div class="image-info-badge">
+          元サイズ: <span id="imageDimensions">0 × 0</span> px
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 分割設定セクション -->
+    <section class="card">
+      <h2 class="card-title"><span class="icon">2</span> 分割設定</h2>
+      <div class="settings-grid">
+        <div class="input-group">
+          <label for="cropWidth">横サイズ (px)</label>
+          <input type="number" id="cropWidth" value="400" min="1">
+        </div>
+        <div class="input-group">
+          <label for="cropHeight">縦サイズ (px)</label>
+          <input type="number" id="cropHeight" value="1600" min="1">
+        </div>
+        <div class="input-group">
+          <label for="colsCount">横方向の枚数</label>
+          <input type="number" id="colsCount" value="4" min="1">
+        </div>
+        <div class="input-group">
+          <label for="rowsCount">縦方向の枚数</label>
+          <input type="number" id="rowsCount" value="1" min="1">
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="resetBtn" class="btn btn-outline" type="button">🔄 初期設定に戻す</button>
+        <button id="updatePreviewBtn" class="btn btn-secondary" type="button">✨ プレビュー更新</button>
+      </div>
+    </section>
+
+    <!-- 3. 分割プレビュー＆保存セクション -->
+    <section class="card">
+      <h2 class="card-title"><span class="icon">3</span> 分割プレビュー＆一括保存</h2>
+      
+      <div style="margin-bottom: 16px;">
+        <div class="input-group" style="max-width: 300px; margin: 0 auto 16px;">
+          <label for="fileNamePrefix" style="text-align: center; display: block;">保存ファイル名</label>
+          <input type="text" id="fileNamePrefix" value="header" placeholder="header">
+        </div>
+        <button id="downloadZipBtn" class="btn btn-primary btn-lg" disabled>
+          💾 PNG画像をZIPで一括保存
+        </button>
+      </div>
+
+      <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">
+        ※画像をクリックすると拡大表示します
+      </p>
+
+      <div id="splitPreviewGrid" class="split-preview-grid">
+        <!-- JSで分割画像カードが動的に挿入されます -->
+      </div>
+    </section>
+
+    <!-- 4. 設定のバックアップ・復元セクション -->
+    <section class="card">
+      <h2 class="card-title"><span class="icon">4</span> バックアップ・設定の保管</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        設定内容は自動的にブラウザへ保存されます。ファイルとして書き出し・読み込みを行うことも可能です。
+      </p>
+      <div class="backup-controls">
+        <button id="exportSettingsBtn" class="btn btn-outline" type="button">📤 設定の保存 (.johnson)</button>
+        <button id="importSettingsBtn" class="btn btn-outline" type="button">📥 設定の復元</button>
+        <input type="file" id="jsonFileInput" accept=".johnson,.json" style="display: none;">
+      </div>
+    </section>
+  </div>
+
+  <!-- モーダル（プレビュー拡大表示用） -->
+  <div id="imageModal" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modalCloseBtn" class="modal-close" type="button">✕</button>
+      <img id="modalImage" src="" alt="拡大表示">
+      <p id="modalCaption" style="font-weight: bold; color: var(--text-main);"></p>
+    </div>
+  </div>
+
+  <!-- ローディング表示 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p style="font-weight: bold; color: var(--text-main);">画像を処理中...</p>
+  </div>
+
+  <!-- ==========================================================================
+     4. JavaScript (アプリケーションロジック)
+     ========================================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      /* ------------------------------------------------------------------------
+         定数および状態管理変数
+         ------------------------------------------------------------------------ */
+      const DEFAULT_SETTINGS = {
+        cropWidth: 400,
+        cropHeight: 1600,
+        colsCount: 4,
+        rowsCount: 1,
+        fileNamePrefix: 'header'
+      };
+
+      const LOCAL_STORAGE_KEY = 'iriam_x_splitter_settings';
+
+      // 処理対象の画像データ（HTMLImageElement）
+      let loadedImage = null;
+      // 生成された分割キャンバス・Blob情報の保持用
+      let generatedSplits = []; // { blob, dataUrl, index, filename, width, height }
+
+      /* ------------------------------------------------------------------------
+         DOMエレメントの取得
+         ------------------------------------------------------------------------ */
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('fileInput');
+      const sourcePreviewContainer = document.getElementById('sourcePreviewContainer');
+      const sourceImage = document.getElementById('sourceImage');
+      const imageDimensions = document.getElementById('imageDimensions');
+      const guideOverlay = document.getElementById('guideOverlay');
+
+      const cropWidthInput = document.getElementById('cropWidth');
+      const cropHeightInput = document.getElementById('cropHeight');
+      const colsCountInput = document.getElementById('colsCount');
+      const rowsCountInput = document.getElementById('rowsCount');
+      const fileNamePrefixInput = document.getElementById('fileNamePrefix');
+
+      const resetBtn = document.getElementById('resetBtn');
+      const updatePreviewBtn = document.getElementById('updatePreviewBtn');
+      const downloadZipBtn = document.getElementById('downloadZipBtn');
+      const splitPreviewGrid = document.getElementById('splitPreviewGrid');
+
+      const alertWarning = document.getElementById('alertWarning');
+      const alertError = document.getElementById('alertError');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      const exportSettingsBtn = document.getElementById('exportSettingsBtn');
+      const importSettingsBtn = document.getElementById('importSettingsBtn');
+      const jsonFileInput = document.getElementById('jsonFileInput');
+
+      const imageModal = document.getElementById('imageModal');
+      const modalImage = document.getElementById('modalImage');
+      const modalCaption = document.getElementById('modalCaption');
+      const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+      /* ------------------------------------------------------------------------
+         1. 初期化処理 & ローカルストレージ連携
+         ------------------------------------------------------------------------ */
+      // 保存された設定の読み込み
+      loadSettingsFromLocalStorage();
+
+      // 入力値変更時に自動保存＆プレビュー自動更新
+      const settingInputs = [cropWidthInput, cropHeightInput, colsCountInput, rowsCountInput, fileNamePrefixInput];
+      settingInputs.forEach(input => {
+        input.addEventListener('input', () => {
+          saveSettingsToLocalStorage();
+          updateGuideOverlay();
+          if (loadedImage) {
+            processImageSplitting();
+          }
+        });
+      });
+
+      /* ------------------------------------------------------------------------
+         2. ドラッグ＆ドロップ & ファイル読み込み
+         ------------------------------------------------------------------------ */
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFileSelect(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFileSelect(e.target.files[0]);
+        }
+      });
+
+      /**
+       * 選択されたファイルを検証して読み込む
+       */
+      function handleFileSelect(file) {
+        hideAlerts();
+
+        // 画像ファイル形式チェック
+        if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+          showError('対応していないファイル形式です。PNGまたはJPG形式の画像を選択してください。');
+          return;
+        }
+
+        showLoading(true);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            loadedImage = img;
+            
+            // 元画像プレビューの設定
+            sourceImage.src = e.target.result;
+            imageDimensions.textContent = `${img.width} × ${img.height}`;
+            sourcePreviewContainer.style.display = 'flex';
+
+            // 画像サイズ不足警告チェック (標準推奨 4636 x 1600)
+            const requiredWidth = parseInt(cropWidthInput.value, 10) * parseInt(colsCountInput.value, 10);
+            const requiredHeight = parseInt(cropHeightInput.value, 10) * parseInt(rowsCountInput.value, 10);
+            
+            if (img.width < requiredWidth || img.height < requiredHeight) {
+              showWarning(`警告: アップロードされた画像の解像度 (${img.width}x${img.height}px) が、設定された分割範囲 (${requiredWidth}x${requiredHeight}px) より小さいです。一部が切れかかったり余白になる場合があります。`);
+            }
+
+            updateGuideOverlay();
+            processImageSplitting();
+            showLoading(false);
+          };
+          img.onerror = () => {
+            showError('画像の読み込みに失敗しました。');
+            showLoading(false);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      /* ------------------------------------------------------------------------
+         3. 画像分割コア処理 (Canvas API)
+         ------------------------------------------------------------------------ */
+      /**
+       * Canvasを用いて画像を切り出し、プレビュー要素を生成する
+       */
+      function processImageSplitting() {
+        if (!loadedImage) return;
+
+        hideAlerts();
+        splitPreviewGrid.innerHTML = '';
+        generatedSplits = [];
+
+        const cropW = parseInt(cropWidthInput.value, 10) || 1;
+        const cropH = parseInt(cropHeightInput.value, 10) || 1;
+        const cols = parseInt(colsCountInput.value, 10) || 1;
+        const rows = parseInt(rowsCountInput.value, 10) || 1;
+        const prefix = fileNamePrefixInput.value.trim() || 'image';
+
+        let index = 1;
+
+        // グリッド状に分割ループ処理
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = cropW;
+            canvas.height = cropH;
+            const ctx = canvas.getContext('2d');
+
+            // 切り出し描画位置計算
+            const sx = c * cropW;
+            const sy = r * cropH;
+
+            // 背景透過対応（クリア）
+            ctx.clearRect(0, 0, cropW, cropH);
+            
+            // Canvasに指定領域を描画
+            ctx.drawImage(
+              loadedImage,
+              sx, sy, cropW, cropH, // ソース領域
+              0, 0, cropW, cropH    // 描画先領域
+            );
+
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            // 連番ファイル名整形 (例: header_01.png)
+            const numStr = String(index).padStart(2, '0');
+            const filename = `${prefix}_${numStr}.png`;
+
+            // プレビューカードの構築
+            const card = document.createElement('div');
+            card.className = 'preview-card';
+            
+            // ①〜 記号または数値の表示
+            const badge = document.createElement('div');
+            badge.className = 'badge';
+            badge.textContent = index;
+
+            const imgEl = document.createElement('img');
+            imgEl.src = dataUrl;
+            imgEl.alt = filename;
+
+            const dimEl = document.createElement('div');
+            dimEl.className = 'dimensions';
+            dimEl.textContent = `${cropW}×${cropH}px`;
+
+            card.appendChild(badge);
+            card.appendChild(imgEl);
+            card.appendChild(dimEl);
+
+            // クリック時モーダル拡大表示
+            const currentIndex = index;
+            card.addEventListener('click', () => {
+              openModal(dataUrl, `① ${filename} (${cropW}×${cropH}px)`.replace('①', `[${currentIndex}]`));
+            });
+
+            splitPreviewGrid.appendChild(card);
+
+            // ダウンロードデータ保持
+            generatedSplits.push({
+              canvas: canvas,
+              dataUrl: dataUrl,
+              filename: filename
+            });
+
+            index++;
+          }
+        }
+
+        // ダウンロードボタン有効化
+        downloadZipBtn.disabled = generatedSplits.length === 0;
+      }
+
+      /* ------------------------------------------------------------------------
+         4. ガイドライン表示の更新
+         ------------------------------------------------------------------------ */
+      function updateGuideOverlay() {
+        if (!loadedImage) return;
+
+        const cols = parseInt(colsCountInput.value, 10) || 1;
+        const rows = parseInt(rowsCountInput.value, 10) || 1;
+
+        guideOverlay.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        guideOverlay.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        guideOverlay.innerHTML = '';
+
+        for (let i = 0; i < cols * rows; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'guide-grid-cell';
+          guideOverlay.appendChild(cell);
+        }
+      }
+
+      /* ------------------------------------------------------------------------
+         5. ZIPダウンロード処理 (JSZip使用)
+         ------------------------------------------------------------------------ */
+      downloadZipBtn.addEventListener('click', async () => {
+        if (generatedSplits.length === 0) return;
+
+        showLoading(true);
+
+        try {
+          const zip = new JSZip();
+
+          // 各分割画像をCanvasからBlobに変換してZIPに追加
+          for (const item of generatedSplits) {
+            const blob = await new Promise(resolve => item.canvas.toBlob(resolve, 'image/png'));
+            zip.file(item.filename, blob);
+          }
+
+          // ZIPファイル生成
+          const content = await zip.generateAsync({ type: 'blob' });
+
+          // ダウンロード用アンカーの作成と発火
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(content);
+          const zipName = `${fileNamePrefixInput.value.trim() || 'images'}_split.zip`;
+          link.download = zipName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+
+        } catch (err) {
+          showError('ZIPファイルの作成中にエラーが発生しました: ' + err.message);
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         6. 設定のローカルストレージ保管・リセット
+         ------------------------------------------------------------------------ */
+      function saveSettingsToLocalStorage() {
+        const settings = {
+          cropWidth: cropWidthInput.value,
+          cropHeight: cropHeightInput.value,
+          colsCount: colsCountInput.value,
+          rowsCount: rowsCountInput.value,
+          fileNamePrefix: fileNamePrefixInput.value
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
+      }
+
+      function loadSettingsFromLocalStorage() {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+          try {
+            const settings = JSON.parse(saved);
+            cropWidthInput.value = settings.cropWidth || DEFAULT_SETTINGS.cropWidth;
+            cropHeightInput.value = settings.cropHeight || DEFAULT_SETTINGS.cropHeight;
+            colsCountInput.value = settings.colsCount || DEFAULT_SETTINGS.colsCount;
+            rowsCountInput.value = settings.rowsCount || DEFAULT_SETTINGS.rowsCount;
+            fileNamePrefixInput.value = settings.fileNamePrefix || DEFAULT_SETTINGS.fileNamePrefix;
+          } catch (e) {
+            applyDefaultSettings();
+          }
+        } else {
+          applyDefaultSettings();
+        }
+      }
+
+      function applyDefaultSettings() {
+        cropWidthInput.value = DEFAULT_SETTINGS.cropWidth;
+        cropHeightInput.value = DEFAULT_SETTINGS.cropHeight;
+        colsCountInput.value = DEFAULT_SETTINGS.colsCount;
+        rowsCountInput.value = DEFAULT_SETTINGS.rowsCount;
+        fileNamePrefixInput.value = DEFAULT_SETTINGS.fileNamePrefix;
+      }
+
+      resetBtn.addEventListener('click', () => {
+        applyDefaultSettings();
+        saveSettingsToLocalStorage();
+        updateGuideOverlay();
+        if (loadedImage) {
+          processImageSplitting();
+        }
+      });
+
+      updatePreviewBtn.addEventListener('click', () => {
+        updateGuideOverlay();
+        if (loadedImage) {
+          processImageSplitting();
+        }
+      });
+
+      /* ------------------------------------------------------------------------
+         7. 設定のバックアップ (.johnson) エクスポート / インポート
+         ------------------------------------------------------------------------ */
+      // バックアップ設定書き出し (.johnson 拡張子)
+      exportSettingsBtn.addEventListener('click', () => {
+        const settings = {
+          cropWidth: cropWidthInput.value,
+          cropHeight: cropHeightInput.value,
+          colsCount: colsCountInput.value,
+          rowsCount: rowsCountInput.value,
+          fileNamePrefix: fileNamePrefixInput.value,
+          version: "1.0",
+          exportedAt: new Date().toISOString()
+        };
+
+        const jsonStr = JSON.stringify(settings, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'iriam_splitter_config.johnson';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // インポートボタンクリックでファイル選択ダイアログを開く
+      importSettingsBtn.addEventListener('click', () => {
+        jsonFileInput.click();
+      });
+
+      // バックアップファイル読み込み
+      jsonFileInput.addEventListener('change', (e) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          try {
+            const settings = JSON.parse(event.target.result);
+            if (settings.cropWidth) cropWidthInput.value = settings.cropWidth;
+            if (settings.cropHeight) cropHeightInput.value = settings.cropHeight;
+            if (settings.colsCount) colsCountInput.value = settings.colsCount;
+            if (settings.rowsCount) rowsCountInput.value = settings.rowsCount;
+            if (settings.fileNamePrefix) fileNamePrefixInput.value = settings.fileNamePrefix;
+
+            saveSettingsToLocalStorage();
+            updateGuideOverlay();
+            if (loadedImage) {
+              processImageSplitting();
+            }
+            alert('設定を復元しました！');
+          } catch (err) {
+            showError('.johnson設定ファイルの解析に失敗しました。ファイルが正しくありません。');
+          }
+        };
+
+        reader.readAsText(file);
+        // ファイル選択の初期化
+        e.target.value = '';
+      });
+
+      /* ------------------------------------------------------------------------
+         8. ユーティリティ (モーダル, エラー・アラート表示, ローディング)
+         ------------------------------------------------------------------------ */
+      function openModal(imageSrc, captionText) {
+        modalImage.src = imageSrc;
+        modalCaption.textContent = captionText;
+        imageModal.classList.add('active');
+      }
+
+      function closeModal() {
+        imageModal.classList.remove('active');
+      }
+
+      modalCloseBtn.addEventListener('click', closeModal);
+      imageModal.addEventListener('click', (e) => {
+        if (e.target === imageModal) closeModal();
+      });
+
+      function showWarning(msg) {
+        alertWarning.textContent = msg;
+        alertWarning.classList.add('alert-show');
+      }
+
+      function showError(msg) {
+        alertError.textContent = msg;
+        alertError.classList.add('alert-show');
+      }
+
+      function hideAlerts() {
+        alertWarning.textContent = '';
+        alertWarning.classList.remove('alert-show');
+        alertError.textContent = '';
+        alertError.classList.remove('alert-show');
+      }
+
+      function showLoading(show) {
+        if (show) {
+          loadingOverlay.classList.add('active');
+        } else {
+          loadingOverlay.classList.remove('active');
+        }
+      }
+
+    });
+  </script>
+</body>
+</html>
