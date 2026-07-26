@@ -254,7 +254,7 @@
         const target = document.getElementById('grid-container');
         html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
             callback(canvas);
-        }).catch(() => showToast("画像の生成に失敗しました😢"));
+        }).catch(() => showToast("画像の生成に失敗しました"));
     }
 
     // PNG保存
@@ -272,7 +272,7 @@
     // クリップボードへコピー
     document.getElementById('btn-copy').onclick = () => {
         if (!navigator.clipboard || !window.ClipboardItem) {
-            showToast("お使いの環境ではコピーに対応していません😢");
+            showToast("お使いの環境ではコピーに対応していません");
             return;
         }
         showToast("画像を生成中...");
@@ -282,9 +282,9 @@
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
                         showToast("クリップボードにコピーしました！");
-                    }).catch(() => showToast("コピーに失敗しました😢"));
+                    }).catch(() => showToast("コピーに失敗しました"));
                 } catch (e) {
-                    showToast("コピーが制限されています😢");
+                    showToast("コピーが制限されています");
                 }
             });
         });
