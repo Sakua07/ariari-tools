@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カスタマイズダイス</title>
+    <style>
+        /* テーマごとのカラー定義（デフォルト：✨ 何でも無敵） */
+        :root {
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            
+            /* 🌈 何でもテーマ（ボタンと背景グラデ） */
+            --primary-bg: #e056fd;
+            --primary: linear-gradient(135deg, #ff007f, #ff758c, #7afcff, #f8ff80, #9d4edd);
+            --primary-hover: linear-gradient(135deg, #e60073, #f55b74, #5be1ff, #eeff57, #8b3dca);
+            --display-bg: linear-gradient(135deg, #fff0f6 0%, #eefcff 50%, #fffbe6 100%);
+            --display-border: #f3d5ff;
+            
+            --accent: #8b5cf6;
+            --shadow: rgba(157, 78, 221, 0.2);
+        }
+
+        /* 🌈何でも無敵テーマ */
+        body.theme-special {
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --primary-bg: #e056fd;
+            --primary: linear-gradient(135deg, #ff007f, #ff758c, #7afcff, #f8ff80, #9d4edd);
+            --primary-hover: linear-gradient(135deg, #e60073, #f55b74, #5be1ff, #eeff57, #8b3dca);
+            --display-bg: linear-gradient(135deg, #fff0f6 0%, #eefcff 50%, #fffbe6 100%);
+            --display-border: #f3d5ff;
+            --accent: #7c3aed;
+            --shadow: rgba(157, 78, 221, 0.2);
+        }
+
+        body.theme-pink {
+            --bg-main: #fdf2f8;
+            --card-bg: #ffffff;
+            --text-main: #4a3e3d;
+            --text-sub: #8c7a78;
+            --border-color: #fbcfe8;
+            --primary-bg: #f472b6;
+            --primary: #f472b6;
+            --primary-hover: #ec4899;
+            --display-bg: #fce7f3;
+            --display-border: #fbcfe8;
+            --accent: #db2777;
+            --shadow: rgba(244, 114, 182, 0.15);
+        }
+
+        body.theme-purple {
+            --bg-main: #faf5ff;
+            --card-bg: #ffffff;
+            --text-main: #3b2d54;
+            --text-sub: #7a6899;
+            --border-color: #e9d5ff;
+            --primary-bg: #c084fc;
+            --primary: #c084fc;
+            --primary-hover: #a855f7;
+            --display-bg: #f3e8ff;
+            --display-border: #e9d5ff;
+            --accent: #9333ea;
+            --shadow: rgba(192, 132, 252, 0.15);
+        }
+
+        body.theme-aqua {
+            --bg-main: #f0f9ff;
+            --card-bg: #ffffff;
+            --text-main: #234253;
+            --text-sub: #5d7e91;
+            --border-color: #bae6fd;
+            --primary-bg: #38bdf8;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --display-bg: #e0f2fe;
+            --display-border: #bae6fd;
+            --accent: #0284c7;
+            --shadow: rgba(56, 189, 248, 0.15);
+        }
+
+        body.theme-white {
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --primary-bg: #64748b;
+            --primary: #64748b;
+            --primary-hover: #475569;
+            --display-bg: #f1f5f9;
+            --display-border: #e2e8f0;
+            --accent: #0f172a;
+            --shadow: rgba(100, 116, 139, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 0 0 4px 0;
+            letter-spacing: 0.04em;
+            color: var(--text-main);
+        }
+
+        h5 {
+            text-align: center;
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-sub);
+        }
+
+        /* カラーチェンジャー */
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 10px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px var(--shadow);
+            margin-bottom: 4px;
+        }
+
+        .palette-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .color-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            outline: 2px solid transparent;
+            transition: transform 0.2s, outline-color 0.2s;
+        }
+
+        .color-dot:hover {
+            transform: scale(1.15);
+        }
+
+        .color-dot.active {
+            outline-color: var(--primary-bg);
+        }
+
+        /* カードスタイル */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 16px var(--shadow);
+            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ダイス表示枠（虹色グラデーション背景） */
+        .dice-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 150px;
+            background: var(--display-bg);
+            border: 1px solid var(--display-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .dice-type-title {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .dice-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-main);
+            min-height: 4.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            line-height: 1.35;
+            padding: 0 8px;
+        }
+
+        .dice-value.rolling {
+            animation: bounce 0.12s infinite alternate;
+            opacity: 0.8;
+        }
+
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-4px); }
+        }
+
+        /* ボタンデザイン（無敵の虹色ボタン） */
+        .roll-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--shadow);
+            transition: opacity 0.2s, transform 0.1s, background 0.3s;
+            margin-top: 14px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .roll-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .roll-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* モード切り替えボタン */
+        .dice-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .mode-btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: var(--bg-main);
+        }
+
+        .mode-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        /* カスタム入力欄 */
+        .custom-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="text"], textarea {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-bg);
+        }
+
+        .sub-text {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        /* バックアップ/復元エリア */
+        .backup-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-main);
+        }
+
+        /* 履歴表示 */
+        .history-list {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .history-item {
+            background: var(--display-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            color: var(--text-main);
+        }
+
+        .history-item strong {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body class="theme-special">
+
+<div class="container">
+    <h1>✨ 何でもダイス！ ✨</h1>
+
+    <h5>🎲 ダイスを選んで振ろう！バックアップと復元もできるよ！</h5>
+
+    <!-- カラーパレット -->
+    <div class="color-palette">
+        <span class="palette-title">テーマ：</span>
+        <div class="color-dot active" style="background: linear-gradient(135deg, #ff007f, #7afcff, #f8ff80);" onclick="setTheme('special', this)" title="スペシャリテ(虹)"></div>
+        <div class="color-dot" style="background: #f472b6;" onclick="setTheme('pink', this)" title="ピンク"></div>
+        <div class="color-dot" style="background: #c084fc;" onclick="setTheme('purple', this)" title="パープル"></div>
+        <div class="color-dot" style="background: #38bdf8;" onclick="setTheme('aqua', this)" title="アクアブルー"></div>
+        <div class="color-dot" style="background: #64748b;" onclick="setTheme('white', this)" title="ナチュラル"></div>
+    </div>
+
+    <!-- メインディスプレイ -->
+    <div class="card">
+        <div class="dice-display">
+            <div id="dice-type-title" class="dice-type-title">✨ 何でもダイス</div>
+            <div id="dice-value" class="dice-value">🎲</div>
+        </div>
+        <button id="roll-btn" class="roll-btn" onclick="rollCurrentDice()">ダイスを振る！</button>
+    </div>
+
+    <!-- ダイス選択 -->
+    <div class="card">
+        <div class="card-title">🎲 ダイスの種類</div>
+        <div class="dice-selector">
+            <button id="btn-mode-preset" class="mode-btn active" onclick="selectMode('preset')">🎉 何でもダイス</button>
+            <button id="btn-mode-custom" class="mode-btn" onclick="selectMode('custom')">例 カスタマイズダイス</button>
+        </div>
+    </div>
+
+    <!-- カスタムダイス設定・バックアップ -->
+    <div class="card">
+        <div class="card-title">🧰 オリジナルダイスを作る・保存</div>
+        <div class="custom-inputs">
+            <input type="text" id="custom-title" placeholder="ダイスの名前 (例: 罰ゲームダイス)" value="マイ・ダイス">
+            <textarea id="custom-options" placeholder="出目をカンマ区切りで入力&#10;(例: 歌う, 1回休み, 秘密告白, 筋トレ10回)"></textarea>
+            <div class="sub-text">※項目をカンマ( , )または改行で区切って入力できます。</div>
+            
+            <button class="mode-btn" style="justify-content: center; background: var(--primary); color: white; border: none; margin-top: 2px;" onclick="applyCustomDice()">
+                このカスタムダイスを使う
+            </button>
+
+            <hr style="border: none; border-top: 1px dashed var(--border-color); margin: 8px 0;">
+
+            <div class="card-title" style="font-size: 0.85rem; margin-bottom: 4px;">💾 保存（バックアップ）・復元</div>
+            <div class="sub-text">作成したカスタムダイスの設定をファイルとして保存・読み込みできます。</div>
+            <div class="backup-controls">
+                <button class="btn-secondary" onclick="exportBackup()">💾 バックアップ保存</button>
+                <button class="btn-secondary" onclick="document.getElementById('file-input').click()">📁 ファイルから復元</button>
+                <input type="file" id="file-input" accept=".json" style="display: none;" onchange="importBackup(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="card">
+        <div class="card-title">📜 履歴（直近5回）</div>
+        <div id="history-list" class="history-list">
+            <span class="sub-text">まだ履歴はありません</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 何でもダイス（パーティー指示ダイス）の内容
+    const defaultAnythingDice = {
+        title: "✨ 何でもダイス",
+        options: [
+            "🐱 次のターンまで語尾に「にゃー」をつける", 
+            "🐕 次のターンまで語尾に「ワン！」をつける", 
+            "🍙 次のターンまで語尾に「どすこい！」をつける", 
+            "💋 次のターンまで語尾に「イヤーん！あは〜ん！」をつける", 
+            "🚫 次のターンまで「英語禁止」", 
+            "🚫 次のターンまで「日本語禁止」", 
+            "💪 さぁ筋トレだ！まずは10回！","✨オペラ風に30秒喋り…ましょぉぉぉおおおおお⤴︎",
+            "🦶 足ツボはあるか？30秒踏んでみようか！",
+            "💃 ソーラン節でも踊りなはれ！！",
+            "🍄 辛い物か苦いお茶はあるか？ないなら苦手なものをくいな！！",
+            "⚡️ ビリビリペンやビリビリルーレットはあるか？なければ次のターンまで正座しな！",
+            "‼️ 良かったな！次ヤバいのがでた時にリスナーの半分が許してくれたらしなくて良いぞ！",
+            "🎤 リスナーさんに即興で歌を送ってみよう！",
+            "🗣️ １０文字以内のセリフを言わされる！", 
+            "🦵 片足立ちで次のターンを迎えるかpt数分の秒数だ！",
+            "🦵 はい！その場でモモ上げ30回！直角にね！！", 
+            "👤 エセ外国人風に食べたい物を伝えよう！", 
+            "🗣️ 早口言葉に挑戦",
+            "🗣️ ダジャレに挑戦", 
+            "🤝 リスナーを褒める", "🤝 リスナーに褒められる", 
+            "😇 ノープラン（セーフ）"
+        ]
+    };
+
+    let customDice = {
+        title: "マイ・ダイス",
+        options: ["歌う", "1回休み", "秘密告白", "筋トレ10回"]
+    };
+
+    let currentDice = defaultAnythingDice;
+    let currentMode = 'preset';
+    let isRolling = false;
+    let history = [];
+
+    // 初期化
+    window.onload = function() {
+        document.getElementById('custom-title').value = customDice.title;
+        document.getElementById('custom-options').value = customDice.options.join(', ');
+    };
+
+    // テーマ切替
+    function setTheme(themeName, el) {
+        document.body.className = 'theme-' + themeName;
+        document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+        if (el) el.classList.add('active');
+    }
+
+    // モード選択（何でもダイス / カスタマイズダイス）
+    function selectMode(mode) {
+        if (isRolling) return;
+        currentMode = mode;
+
+        document.getElementById('btn-mode-preset').classList.remove('active');
+        document.getElementById('btn-mode-custom').classList.remove('active');
+
+        if (mode === 'preset') {
+            document.getElementById('btn-mode-preset').classList.add('active');
+            currentDice = defaultAnythingDice;
+        } else {
+            document.getElementById('btn-mode-custom').classList.add('active');
+            currentDice = customDice;
+        }
+
+        document.getElementById('dice-type-title').textContent = currentDice.title;
+        document.getElementById('dice-value').textContent = "🎲";
+    }
+
+    // カスタムダイス設定反映
+    function applyCustomDice() {
+        if (isRolling) return;
+        const titleInput = document.getElementById('custom-title').value.trim() || "カスタムダイス";
+        const optionsInput = document.getElementById('custom-options').value;
+        
+        const options = optionsInput.split(/[,、\n]/).map(s => s.trim()).filter(s => s.length > 0);
+
+        if (options.length < 2) {
+            alert("出目をカンマ( , )または改行で区切って2つ以上入力してください！");
+            return;
+        }
+
+        customDice = {
+            title: titleInput,
+            options: options
+        };
+
+        selectMode('custom');
+        alert(`「${titleInput}」を設定しました！`);
+    }
+
+    // ダイスを振る
+    function rollCurrentDice() {
+        if (isRolling) return;
+        if (!currentDice.options || currentDice.options.length === 0) {
+            alert("ダイスの出目が設定されていません。");
+            return;
+        }
+
+        isRolling = true;
+
+        const valEl = document.getElementById('dice-value');
+        const rollBtn = document.getElementById('roll-btn');
+        
+        valEl.classList.add('rolling');
+        rollBtn.disabled = true;
+        rollBtn.style.opacity = "0.6";
+
+        let count = 0;
+        const maxRolls = 12;
+        const interval = setInterval(() => {
+            const randomTmp = currentDice.options[Math.floor(Math.random() * currentDice.options.length)];
+            valEl.textContent = randomTmp;
+            count++;
+
+            if (count >= maxRolls) {
+                clearInterval(interval);
+                const finalResult = currentDice.options[Math.floor(Math.random() * currentDice.options.length)];
+                valEl.textContent = finalResult;
+                valEl.classList.remove('rolling');
+                
+                rollBtn.disabled = false;
+                rollBtn.style.opacity = "1";
+                isRolling = false;
+
+                addHistory(currentDice.title, finalResult);
+            }
+        }, 60);
+    }
+
+    // 履歴追加
+    function addHistory(title, result) {
+        history.unshift({ title: title, result: result });
+        if (history.length > 5) history.pop();
+
+        const historyEl = document.getElementById('history-list');
+        historyEl.innerHTML = history.map(item => `
+            <div class="history-item">
+                ${item.title}: <strong>${item.result}</strong>
+            </div>
+        `).join('');
+    }
+
+    // バックアップ (JSONファイル出力)
+    function exportBackup() {
+        const titleInput = document.getElementById('custom-title').value.trim() || "カスタムダイス";
+        const optionsInput = document.getElementById('custom-options').value;
+        const options = optionsInput.split(/[,、\n]/).map(s => s.trim()).filter(s => s.length > 0);
+
+        const data = {
+            title: titleInput,
+            options: options,
+            exportDate: new Date().toISOString()
+        };
+
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${titleInput}_backup.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // 復元 (JSONファイル読み込み)
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.title && Array.isArray(data.options)) {
+                    customDice = {
+                        title: data.title,
+                        options: data.options
+                    };
+                    
+                    document.getElementById('custom-title').value = customDice.title;
+                    document.getElementById('custom-options').value = customDice.options.join(', ');
+
+                    selectMode('custom');
+                    alert(`ファイルから「${customDice.title}」を復元・設定しました！`);
+                } else {
+                    alert("無効なバックアップファイルフォーマットです。");
+                }
+            } catch (err) {
+                alert("ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+</script>
+</body>
+</html>
