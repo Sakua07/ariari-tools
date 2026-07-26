@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>かわちい♡ グリッドマップ＆すごろくツール</title>
+    <title>マップ＆すごろくツール</title>
     <style>
         :root {
             --bg-color: #fff0f5;
@@ -61,6 +61,9 @@
         
         .badge { position: absolute; top: 1px; left: 1px; font-size: 0.55rem; padding: 1px 2px; border-radius: 3px; color: white; background: rgba(0,0,0,0.3); pointer-events: none; }
         
+        /* コマ用画像のスタイル */
+        .player-icon { width: 75%; height: 75%; object-fit: contain; pointer-events: none; }
+
         .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
 
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(219, 112, 147, 0.9); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
@@ -107,6 +110,8 @@
                     <button class="d-pad-btn" style="grid-column: 2;" onclick="movePlayer(1, 0)">↓</button>
                     <button class="btn-misc btn-green" onclick="undoMove()">↩️ 戻る</button>
                     <button class="btn-misc" style="background:#ef4444;" onclick="confirmResetPlayer()">🔄 現在地リセット</button>
+                    <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
+                    <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                 </div>
                 <div class="sub-note">※下のマップをタップでも操作できるよ！</div>
             </div>
@@ -142,6 +147,7 @@
     let startPos = { r: 0, c: 0 }, goalPos = { r: 7, c: 7 }, currentPos = { r: 0, c: 0 };
     let moveHistory = []; 
     let stepCount = 0;
+    let playerIconSrc = null; // カスタムコマ画像用データ
 
     const gridEl = document.getElementById('grid');
     const stepCountEl = document.getElementById('step-count');
@@ -195,6 +201,19 @@
         }
     }
 
+    function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                playerIconSrc = evt.target.result;
+                renderGrid();
+                showToast("コマ画像を変更しました！");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
     function renderGrid() {
         gridEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
         gridEl.innerHTML = '';
@@ -206,7 +225,13 @@
                 if (r === startPos.r && c === startPos.c) { cell.classList.add('start'); cell.innerHTML = '<span class="badge">スタート！</span>'; }
                 if (r === goalPos.r && c === goalPos.c) { cell.classList.add('goal'); cell.innerHTML = '<span class="badge">ゴール！</span>'; }
                 
-                if (r === currentPos.r && c === currentPos.c) cell.innerHTML += '📍';
+                if (r === currentPos.r && c === currentPos.c) {
+                    if (playerIconSrc) {
+                        cell.innerHTML += `<img src="${playerIconSrc}" class="player-icon" alt="コマ">`;
+                    } else {
+                        cell.innerHTML += '📍';
+                    }
+                }
                 if (textData[r][c]) cell.innerHTML += textData[r][c];
 
                 cell.onclick = () => handleCellClick(r, c);
