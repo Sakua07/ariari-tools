@@ -547,7 +547,7 @@
     <section class="card">
       <h2 class="card-title"><span class="icon">1</span> 画像の選択</h2>
       <div id="dropZone" class="drop-zone">
-        <p class="recommended">4636 × 1600 px の画像をアップロードしてください</p>
+        <p class="recommended">4000 × 1600 px の画像をアップロードしてください</p>
         <p>ここに画像をドラッグ＆ドロップ<br>または</p>
         <button type="button" class="btn btn-primary" style="margin-top: 8px;">
           📂 画像を選択する
@@ -775,7 +775,7 @@
             imageDimensions.textContent = `${img.width} × ${img.height}`;
             sourcePreviewContainer.style.display = 'flex';
 
-            // 画像サイズ不足警告チェック (標準推奨 4636 x 1600)
+            // 画像サイズ不足警告チェック (標準推奨 4000 x 1600)
             const requiredWidth = parseInt(cropWidthInput.value, 10) * parseInt(colsCountInput.value, 10);
             const requiredHeight = parseInt(cropHeightInput.value, 10) * parseInt(rowsCountInput.value, 10);
             
