@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>防災オールインワン・ダッシュボード</title>
+  <style>
+    :root {
+      --primary: #e65100;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #111111;
+      --danger: #d32f2f;
+      --warning: #f57c00;
+      --info: #0288d1;
+    }
+    
+    /* SOS点滅 */
+    @keyframes sos-flash {
+      0% { background-color: #d32f2f; }
+      50% { background-color: #ffffff; }
+      100% { background-color: #d32f2f; }
+    }
+    body.sos-active { animation: sos-flash 0.3s infinite; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 16px;
+      font-size: 1.05rem;
+    }
+    .container { max-width: 650px; margin: 0 auto; }
+    
+    /* メインタイトル */
+    h1 { font-size: 1.6rem; color: var(--primary); text-align: center; margin-bottom: 14px; font-weight: bold; }
+
+    /* SOSボタンエリア */
+    .sos-container {
+      margin-bottom: 12px;
+    }
+    .sos-btn {
+      width: 100%; padding: 16px; background: var(--danger); color: white;
+      border: none; border-radius: 10px; font-size: 1.25rem; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 6px rgba(211, 47, 47, 0.3);
+    }
+    .sos-warning {
+      font-size: 0.85rem; color: #d32f2f; font-weight: bold; text-align: center; margin-top: 6px;
+    }
+
+    /* オフライン保存ボタン */
+    .save-offline-btn {
+      width: 100%; padding: 12px; background: #2e7d32; color: white;
+      border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 12px;
+    }
+    
+    /* メインタブ */
+    .tab-buttons { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn {
+      flex: 1; padding: 12px 8px; border: none; background: #e0e0e0;
+      font-weight: bold; font-size: 1.05rem; border-radius: 8px; cursor: pointer;
+    }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card {
+      background: var(--card-bg); border-radius: 10px; padding: 18px;
+      margin-bottom: 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      border: 1px solid #e0e0e0;
+    }
+
+    /* 見出し */
+    h2 {
+      font-size: 1.35rem; margin-top: 0; margin-bottom: 12px;
+      padding: 6px 10px; background: #fff3e0; color: #b71c1c;
+      border-left: 6px solid var(--primary); border-radius: 4px;
+      font-weight: bold;
+    }
+
+    label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 1.05rem; }
+    input[type="number"], input[type="date"], textarea {
+      width: 100%; box-sizing: border-box; padding: 10px; font-size: 1rem;
+      border: 2px solid #ccc; border-radius: 6px; margin-top: 4px;
+    }
+    input[type="number"] { width: 100px; font-size: 1.2rem; text-align: center; }
+    
+    /* 2番専用のデカ説明ボックス */
+    .stock-explain-box {
+      background: #eefbe8;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .stock-explain-title {
+      font-weight: bold;
+      color: #1b5e20;
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+    }
+    .stock-explain-text {
+      font-size: 0.98rem;
+      color: #2e7d32;
+      line-height: 1.5;
+    }
+    .stock-explain-text strong {
+      color: #d32f2f;
+      background: #fff;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .calc-result {
+      background: #fff3e0; border-left: 5px solid var(--primary);
+      padding: 12px; margin-top: 12px; font-size: 1rem; line-height: 1.6;
+    }
+    .checklist { list-style: none; padding: 0; margin: 0; }
+    .checklist li { margin-bottom: 12px; font-size: 1.05rem; }
+    .checklist input[type="checkbox"] { margin-right: 10px; transform: scale(1.4); }
+
+    /* 賞味期限一覧 */
+    .stock-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px dashed #ccc; gap: 8px;
+      font-weight: bold; font-size: 1.05rem;
+    }
+    .status-badge {
+      font-size: 0.9rem; padding: 4px 8px; border-radius: 6px;
+      color: white; font-weight: bold; white-space: nowrap; text-align: center; min-width: 70px;
+    }
+    .status-ok { background: #388e3c; }
+    .status-warn { background: var(--warning); }
+    .status-alert { background: var(--danger); }
+
+    /* 災害種類切り替えサブタブ */
+    .disaster-tabs {
+      display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .disaster-btn {
+      flex: 1; min-width: 75px; padding: 10px 4px; border: 2px solid #ccc;
+      background: #fff; border-radius: 6px; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+    }
+    .disaster-btn.active {
+      background: var(--info); color: white; border-color: var(--info);
+    }
+
+    /* 171表示 */
+    .dial-171 {
+      background: #ffebee; border: 2px solid var(--danger);
+      padding: 14px; border-radius: 10px; margin-bottom: 18px;
+    }
+    .dial-step {
+      display: flex; align-items: center; margin-bottom: 10px; gap: 10px; font-size: 1.1rem;
+    }
+    .dial-num {
+      background: var(--danger); color: white; width: 28px; height: 28px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 1rem; flex-shrink: 0;
+    }
+
+    /* スマホ機能ガイドスタイル */
+    .phone-guide-box {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #fafafa;
+    }
+    .phone-guide-header {
+      font-weight: bold;
+      font-size: 1.15rem;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .effect-tag {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    .os-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: white;
+      margin-right: 6px;
+    }
+    .os-ios { background: #000; }
+    .os-android { background: #3ddc84; color: #000; }
+    .os-common { background: #007aff; }
+
+    .guide-box {
+      background: #e3f2fd; border-left: 5px solid #1976d2;
+      padding: 12px; margin-bottom: 12px; border-radius: 0 6px 6px 0; font-size: 1rem;
+    }
+    .guide-box h3 { margin: 0 0 6px 0; font-size: 1.1rem; color: #0d47a1; }
+
+    .sec-note { font-size: 0.85rem; color: #555; margin-top: -4px; margin-bottom: 8px; }
+
+    .print-btn {
+      width: 100%; padding: 12px; background: #424242; color: white;
+      border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 12px;
+    }
+
+    @media print {
+      body { background: white; color: black; padding: 0; font-size: 12pt; }
+      .no-print, .tab-buttons, .print-btn, .sos-container, .save-offline-btn, .disaster-tabs { display: none !important; }
+      .tab-content, .disaster-content { display: block !important; }
+      .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>防災オールインワン・ガイド</h1>
+
+  <!-- SOSブザー（注意書き追加＆最大音量仕様） -->
+  <div class="sos-container no-print">
+    <button id="sos-btn" class="sos-btn" onclick="toggleSOS()">🚨 SOSブザー・画面点滅を起動</button>
+    <div class="sos-warning">⚠️ ※（端末自体の音量設定を上げてください）</div>
+  </div>
+  
+  <!-- オフライン保存ボタン -->
+  <button class="save-offline-btn no-print" onclick="saveForOffline()">📲 このアプリを端末に保存（オフライン準備）</button>
+  
+  <button class="print-btn no-print" onclick="window.print()">🖨️ 紙に印刷・PDF保存する</button>
+
+  <!-- メインタブボタン -->
+  <div class="tab-buttons no-print">
+    <button class="tab-btn active" onclick="switchTab('check-tab', this)">1. 備え・備蓄チェック</button>
+    <button class="tab-btn" onclick="switchTab('guide-tab', this)">2. 行動ガイド・スマホ機能</button>
+  </div>
+
+  <!-- TAB 1: 備えとチェック -->
+  <div id="check-tab" class="tab-content active">
+    
+    <!-- 1. 家族人数計算 -->
+    <div class="card">
+      <h2>1. 家族人数から必要な備蓄量を計算</h2>
+      <label>世帯の人数: 
+        <input type="number" id="people" value="2" min="1" onchange="calculateSupply()"> 人
+      </label>
+      <div class="calc-result" id="calc-output"></div>
+    </div>
+
+    <!-- 2. 賞味・使用期限管理 -->
+    <div class="card">
+      <h2>2. 備蓄品のローリングストック期限管理</h2>
+      
+      <!-- 大きく目立つ説明文 -->
+      <div class="stock-explain-box">
+        <div class="stock-explain-title">💡 この機能でできること・使い方</div>
+        <div class="stock-explain-text">
+          家の非常食や電池の「賞味期限・使用期限」を入れておく欄です。<br>
+          ・期限が近づくと自動で <strong>「あと〇日（黄色）」</strong> に変化！<br>
+          ・期限が切れると <strong>「期限切れ！（赤色）」</strong> で教えてくれます。<br>
+          買い替え・消費のタイミングが一目でわかり、備蓄忘れを防げます。
+        </div>
+      </div>
+
+      <div id="stock-list">
+        <div class="stock-item">
+          <span>水（2L×6本）</span>
+          <input type="date" class="stock-date" data-key="water-date" value="2026-10-01" onchange="checkDates()">
+          <span class="status-badge" id="status-water-date">-</span>
+        </div>
+        <div class="stock-item">
+          <span>アルファ米（家族分）</span>
+          <input type="date" class="stock-date" data-key="rice-date" value="2027-03-15" onchange="checkDates()">
+          <span class="status-badge" id="status-rice-date">-</span>
+        </div>
+        <div class="stock-item">
+          <span>予備乾電池（単3）</span>
+          <input type="date" class="stock-date" data-key="battery-date" value="2028-05-01" onchange="checkDates()">
+          <span class="status-badge" id="status-battery-date">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 家族メモ機能 -->
+    <div class="card">
+      <h2>3. 家族の緊急連絡先・避難場所メモ</h2>
+      <p class="sec-note">※データはお使いの端末（ブラウザ）内にのみ保存され、外部送信されません。</p>
+      <label>家族の連絡先（父・母・学校・会社など）
+        <textarea class="memo-input" data-key="memo-contacts" rows="2" placeholder="父: 090-XXXX-XXXX&#10;母: 090-YYYY-YYYY"></textarea>
+      </label>
+      <label style="margin-top: 12px;">指定避難所・集合ルール
+        <textarea class="memo-input" data-key="memo-evac" rows="2" placeholder="一次避難場所: 〇〇小学校&#10;集合ルール: 〇〇公園の時計台前"></textarea>
+      </label>
+    </div>
+
+    <!-- 4. チェックリスト -->
+    <div class="card">
+      <h2>4. 非常持出袋＆室内安全対策</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" data-id="c1"> 懐中電灯・モバイルバッテリー</label></li>
+        <li><label><input type="checkbox" data-id="c2"> 簡易トイレ（人数×1日5回×3日分）</label></li>
+        <li><label><input type="checkbox" data-id="c3"> 救急用品・常備薬</label></li>
+        <li><label><input type="checkbox" data-id="c4"> 大型家具の転倒防止器具（固定）</label></li>
+        <li><label><input type="checkbox" data-id="s1"> 寝室の頭上に倒れやすいものを置かない</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TAB 2: 行動ガイドと171とスマホSOS -->
+  <div id="guide-tab" class="tab-content">
+    
+    <!-- 超シンプル版 171ガイド -->
+    <div class="dial-171">
+      <div style="color: var(--danger); font-weight: bold; font-size: 1.2rem; margin-bottom: 10px;">
+        📞 災害用伝言ダイヤル「171」超かんたん手順
+      </div>
+      <div class="dial-step">
+        <div class="dial-num">1</div>
+        <div>電話で <strong>171</strong> にかける</div>
+      </div>
+      <div class="dial-step">
+        <div class="dial-num">2</div>
+        <div>伝言を残すなら <strong>1</strong> / 聞くなら <strong>2</strong> を押す</div>
+      </div>
+      <div class="dial-step">
+        <div class="dial-num">3</div>
+        <div>自分の <strong>市外局番からの電話番号</strong> を押す</div>
+      </div>
+    </div>
+
+    <!-- 災害種類切り替え -->
+    <div class="card">
+      <h2>🚨 災害の種類別の行動ガイド</h2>
+      <div class="disaster-tabs no-print">
+        <button class="disaster-btn active" onclick="switchDisaster('d-earthquake', this)">地震</button>
+        <button class="disaster-btn" onclick="switchDisaster('d-typhoon', this)">台風・大雨</button>
+        <button class="disaster-btn" onclick="switchDisaster('d-tsunami', this)">津波</button>
+        <button class="disaster-btn" onclick="switchDisaster('d-fire', this)">火災</button>
+      </div>
+
+      <!-- 地震 -->
+      <div id="d-earthquake" class="disaster-content">
+        <div class="guide-box">
+          <h3>🏠 家の中にいるとき</h3>
+          ・まずは頭を守る（机の下やクッションで保護）。<br>
+          ・揺れが収まるまで動かない（慌てて外に出ない）。<br>
+          ・火は揺れが収まってから消す。
+        </div>
+        <div class="guide-box">
+          <h3>🏢 エレベーター・街中</h3>
+          ・エレベーターは全ての階を押して即降りる。<br>
+          ・街中ではブロック塀やガラス窓から離れる。
+        </div>
+      </div>
+
+      <!-- 台風・大雨 -->
+      <div id="d-typhoon" class="disaster-content" style="display:none;">
+        <div class="guide-box">
+          <h3>🌧️ 暴風・大雨のとき</h3>
+          ・用水路、川、海には絶対に近づかない。<br>
+          ・地下道（アンダーパス）は水が溜まり危険なので避ける。<br>
+          ・明るいうちに早めに頑丈な建物へ避難する。
+        </div>
+      </div>
+
+      <!-- 津波 -->
+      <div id="d-tsunami" class="disaster-content" style="display:none;">
+        <div class="guide-box">
+          <h3>🌊 強い揺れ・津波警報のとき</h3>
+          ・遠くではなく「より高い場所」を目指してすぐに逃げる。<br>
+          ・「ここまで来ないだろう」の自己判断は厳禁。<br>
+          ・一度逃げたら警報が解除されるまで絶対に戻らない。
+        </div>
+      </div>
+
+      <!-- 火災 -->
+      <div id="d-fire" class="disaster-content" style="display:none;">
+        <div class="guide-box">
+          <h3>🔥 火事が発生したとき</h3>
+          ・「火事だ！」と大声で周囲に知らせる。<br>
+          ・煙を吸わないようハンカチ等で口を覆い、姿勢を低くして逃げる。<br>
+          ・一度外に逃げたら、荷物を取りに戻らない。
+        </div>
+      </div>
+
+    </div>
+
+    <!-- スマホ標準の緊急指示ガイド（1〜4） -->
+    <div class="card">
+      <h2>📱 スマホ標準の緊急SOS＆便利機能（1〜4）</h2>
+      <p class="sec-note">※端末の種類やOSのバージョンによって画面の表示・操作方法が若干異なる場合があります。</p>
+
+      <!-- 機能1: 緊急SOS -->
+      <div class="phone-guide-box">
+        <div class="phone-guide-header">1. ボタン連打で起動！「緊急SOS」</div>
+        <div class="effect-tag">
+          <strong>【どうなる？】</strong> 通報画面を素早く呼び出します。さらに事前設定しておくと、通報後に<strong>「あなたの現在地」がSMSで家族へ自動送信</strong>されます。
+        </div>
+        <p style="margin: 6px 0;"><strong>＜使い方・設定方法＞</strong></p>
+        <div style="margin-bottom: 8px;">
+          <span class="os-badge os-ios">iPhone</span>
+          電源（サイド）ボタンを<strong>5回連打</strong>（または電源＋音量ボタン長押し）<br>
+          <small>・事前設定: 「設定」アプリ ➔ 「緊急SOS」 ➔ 「ヘルスケアで緊急連絡先を編集」から家族を追加</small>
+        </div>
+        <div>
+          <span class="os-badge os-android">Android</span>
+          電源ボタンを<strong>5回連打</strong><br>
+          <small>・事前設定: 「設定」アプリ ➔ 「緊急情報とSOS」 ➔ 「緊急連絡先」から家族を追加</small>
+        </div>
+      </div>
+
+      <!-- 機能2: メディカルID / 緊急情報 -->
+      <div class="phone-guide-box">
+        <div class="phone-guide-header">2. ロック画面から確認「メディカルID」</div>
+        <div class="effect-tag">
+          <strong>【どうなる？】</strong> 意識を失った時でも、救助者や警察が<strong>スマホのロックを解除せずに氏名・持病・血液型・家族の連絡先</strong>を確認できます。
+        </div>
+        <p style="margin: 6px 0;"><strong>＜設定方法＞</strong></p>
+        <div style="margin-bottom: 8px;">
+          <span class="os-badge os-ios">iPhone</span>
+          「ヘルスケア」アプリを開く ➔ 右上プロフィールアイコン ➔ 「メディカルID」を登録
+        </div>
+        <div>
+          <span class="os-badge os-android">Android</span>
+          「設定」アプリ ➔ 「緊急情報とSOS」 ➔ 「緊急情報（またはメディカル情報）」を登録
+        </div>
+      </div>
+
+      <!-- 機能3: 位置情報の常時共有 -->
+      <div class="phone-guide-box">
+        <div class="phone-guide-header">3. 家族でマップ確認「位置情報の常時共有」</div>
+        <div class="effect-tag">
+          <strong>【どうなる？】</strong> 被災時に連絡が取れなくても、<strong>お互いの現在地がマップ上にリアルタイム表示</strong>され、無事や居場所がひと目でわかります。
+        </div>
+        <p style="margin: 6px 0;"><strong>＜設定方法＞</strong></p>
+        <div style="margin-bottom: 8px;">
+          <span class="os-badge os-common">iPhone（探すアプリ）</span>
+          「探す」アプリ ➔ 「人を探す」 ➔ 「位置情報を共有」で家族を選択
+        </div>
+        <div>
+          <span class="os-badge os-common">共通（Googleマップ）</span>
+          Googleマップ ➔ 右上アイコン ➔ 「位置情報の共有」 ➔ 「無期限」で家族に共有
+        </div>
+      </div>
+
+      <!-- 機能4: LINEの1タップ位置送信 -->
+      <div class="phone-guide-box">
+        <div class="phone-guide-header">4. 3秒で居場所を通知「LINE位置情報送信」</div>
+        <div class="effect-tag">
+          <strong>【どうなる？】</strong> パニックで文字が打てない時でも、<strong>たった3タップで現在地ピンを家族トークに送信</strong>できます。
+        </div>
+        <p style="margin: 6px 0;"><strong>＜操作方法（iPhone・Android共通）＞</strong></p>
+        <ol style="margin: 4px 0; padding-left: 20px;">
+          <li>家族のLINEトーク画面を開く</li>
+          <li>左下の <strong>「＋」</strong> マークをタップ</li>
+          <li><strong>「位置情報」</strong> を選び ➔ <strong>「この位置を送信」</strong> を押す（3秒で完了）</li>
+        </ol>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // PWA & オフライン保存機能
+  if ('serviceWorker' in navigator) {
+    const manifest = {
+      name: "防災オールインワン・ガイド",
+      short_name: "防災ガイド",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#f8f9fa",
+      theme_color: "#e65100"
+    };
+    const mBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+    const mLink = document.createElement('link');
+    mLink.rel = 'manifest';
+    mLink.href = URL.createObjectURL(mBlob);
+    document.head.appendChild(mLink);
+
+    const swCode = `
+      const CACHE_NAME = 'bousai-pwa-v6';
+      self.addEventListener('install', e => {
+        e.waitUntil(
+          caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])).then(() => self.skipWaiting())
+        );
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(self.clients.claim());
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request).then(res => res || fetch(e.request).catch(() => caches.match('./')))
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], {type: 'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+
+  // オフライン保存ボタンの動作
+  function saveForOffline() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      alert("✅ このアプリはすでにスマホ内に保存されています！\nネットが切れてもホーム画面やブラウザからそのまま開けます。");
+    } else {
+      alert("📲 保存処理を行いました！\nスマホの「ホーム画面に追加」を行うと、完全なオフラインアプリとして利用できます。");
+    }
+  }
+
+  // 災害種類の切り替え
+  function switchDisaster(id, btn) {
+    document.querySelectorAll('.disaster-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.disaster-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    btn.classList.add('active');
+  }
+
+  // SOSブザー＆フラッシュ機能（最大音量出力仕様）
+  let audioCtx = null;
+  let oscillator = null;
+  let isSosActive = false;
+
+  function toggleSOS() {
+    const btn = document.getElementById('sos-btn');
+    if (!isSosActive) {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 880; // 高音で目立つ警告音
+      
+      // ブラウザが出せる音量ゲインを最大（1.0）に設定
+      gainNode.gain.value = 1.0;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.start();
+
+      document.body.classList.add('sos-active');
+      btn.textContent = '🟩 SOSブザー・画面点滅を停止';
+      btn.style.backgroundColor = '#388e3c';
+      isSosActive = true;
+    } else {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator.disconnect();
+      }
+      document.body.classList.remove('sos-active');
+      btn.textContent = '🚨 SOSブザー・画面点滅を起動';
+      btn.style.backgroundColor = '#d32f2f';
+      isSosActive = false;
+    }
+  }
+
+  // タブ切替
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // 人数計算
+  function calculateSupply() {
+    const count = parseInt(document.getElementById('people').value) || 1;
+    document.getElementById('calc-output').innerHTML = `
+      <strong>【${count}人分の推奨備蓄目安】</strong><br>
+      ・水（3日分）: <strong>${count * 3 * 3} L</strong>（7日分なら ${count * 3 * 7} L）<br>
+      ・非常食（3日分）: <strong>${count * 3 * 3} 食</strong><br>
+      ・簡易トイレ: <strong>${count * 5 * 3} 個</strong>
+    `;
+  }
+
+  // 期限チェック
+  function checkDates() {
+    const today = new Date();
+    document.querySelectorAll('.stock-date').forEach(input => {
+      const key = input.getAttribute('data-key');
+      const val = input.value;
+      if (val) localStorage.setItem(key, val);
+
+      const badge = document.getElementById('status-' + key);
+      if (!val || !badge) return;
+
+      const targetDate = new Date(val);
+      const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        badge.textContent = '期限切れ！';
+        badge.className = 'status-badge status-alert';
+      } else if (diffDays <= 30) {
+        badge.textContent = `あと${diffDays}日`;
+        badge.className = 'status-badge status-warn';
+      } else {
+        badge.textContent = 'OK';
+        badge.className = 'status-badge status-ok';
+      }
+    });
+  }
+
+  // 初期化処理
+  window.onload = function() {
+    calculateSupply();
+    
+    // 賞味期限の復元
+    document.querySelectorAll('.stock-date').forEach(input => {
+      const saved = localStorage.getItem(input.getAttribute('data-key'));
+      if (saved) input.value = saved;
+    });
+    checkDates();
+
+    // メモ入力の保存と復元
+    document.querySelectorAll('.memo-input').forEach(textarea => {
+      const key = textarea.getAttribute('data-key');
+      const saved = localStorage.getItem(key);
+      if (saved) textarea.value = saved;
+      
+      textarea.addEventListener('input', e => {
+        localStorage.setItem(key, e.target.value);
+      });
+    });
+
+    // チェックボックスの保存と復元
+    document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+      const id = box.getAttribute('data-id');
+      if (localStorage.getItem(id) === 'true') box.checked = true;
+      box.addEventListener('change', e => localStorage.setItem(id, e.target.checked));
+    });
+  };
+</script>
+
+</body>
+</html>
