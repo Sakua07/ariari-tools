@@ -383,6 +383,84 @@
         .history-item strong {
             color: var(--accent);
         }
+
+        /* ✨ 何でもダイス編集用スタイル */
+        .anything-editor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 12px 0;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .anything-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+        }
+
+        .btn-delete:hover {
+            opacity: 0.85;
+        }
+
+        .btn-save-large {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #ffffff;
+            background: var(--primary);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-save-large:hover {
+            opacity: 0.9;
+        }
+
+        .btn-save-large:active {
+            transform: scale(0.98);
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: var(--card-bg);
+            color: var(--accent);
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .btn-add:hover {
+            background: var(--bg-main);
+            border-color: var(--accent);
+        }
     </style>
 </head>
 <body class="theme-special">
@@ -420,6 +498,18 @@
         </div>
     </div>
 
+    <!-- 何でもダイスの中身を編集するエリア -->
+    <div class="card">
+        <div class="card-title">⚙️ ✨ 何でもダイスの内容を編集</div>
+        <button class="btn-save-large" onclick="saveAnythingDice()">💾 更新保存 (ファイル保存も実行)</button>
+        
+        <div id="anything-options-list" class="anything-editor-list">
+            <!-- JSで動的に追加されます -->
+        </div>
+
+        <button class="btn-add" onclick="addAnythingOption()" title="項目を追加">＋ 項目を追加</button>
+    </div>
+
     <!-- カスタムダイス設定・バックアップ -->
     <div class="card">
         <div class="card-title">🧰 オリジナルダイスを作る・保存</div>
@@ -455,7 +545,7 @@
 
 <script>
     // 何でもダイス（パーティー指示ダイス）の内容
-    const defaultAnythingDice = {
+    let defaultAnythingDice = {
         title: "✨ 何でもダイス",
         options: [
             "🐱 次のターンまで語尾に「にゃー」をつける", 
@@ -496,7 +586,122 @@
     window.onload = function() {
         document.getElementById('custom-title').value = customDice.title;
         document.getElementById('custom-options').value = customDice.options.join(', ');
+        renderAnythingEditor();
     };
+
+    // ✨ 何でもダイスの編集用フォーム描画
+    function renderAnythingEditor() {
+        const listContainer = document.getElementById('anything-options-list');
+        listContainer.innerHTML = '';
+
+        defaultAnythingDice.options.forEach((optText, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'anything-item';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = optText;
+            input.className = 'anything-input-field';
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-delete';
+            delBtn.textContent = '−';
+            delBtn.title = '削除';
+            delBtn.onclick = function() {
+                removeAnythingOption(index);
+            };
+
+            itemDiv.appendChild(input);
+            itemDiv.appendChild(delBtn);
+            listContainer.appendChild(itemDiv);
+        });
+    }
+
+    // ✨ 何でもダイスに新しい項目を追加 (+)
+    function addAnythingOption() {
+        const listContainer = document.getElementById('anything-options-list');
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'anything-item';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = '';
+        input.placeholder = '新しい出目を入力';
+        input.className = 'anything-input-field';
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete';
+        delBtn.textContent = '−';
+        delBtn.title = '削除';
+        delBtn.onclick = function() {
+            itemDiv.remove();
+        };
+
+        itemDiv.appendChild(input);
+        itemDiv.appendChild(delBtn);
+        listContainer.appendChild(itemDiv);
+        
+        // 追加された入力欄へフォーカス
+        input.focus();
+    }
+
+    // ✨ 何でもダイスの特定項目を削除
+    function removeAnythingOption(index) {
+        const inputs = document.querySelectorAll('.anything-input-field');
+        if (inputs.length <= 2) {
+            alert("ダイスの出目は最低2つ以上必要です！");
+            return;
+        }
+        inputs[index].parentElement.remove();
+    }
+
+    // ✨ 何でもダイスの更新保存（ファイル出力・ダイス反映）
+    function saveAnythingDice() {
+        if (isRolling) return;
+        const inputs = document.querySelectorAll('.anything-input-field');
+        const newOptions = [];
+
+        inputs.forEach(input => {
+            const val = input.value.trim();
+            if (val.length > 0) {
+                newOptions.push(val);
+            }
+        });
+
+        if (newOptions.length < 2) {
+            alert("有効な出目を2つ以上入力してください！");
+            return;
+        }
+
+        defaultAnythingDice.options = newOptions;
+
+        // 現在選択中なら即時反映
+        if (currentMode === 'preset') {
+            currentDice = defaultAnythingDice;
+        }
+
+        // 画面の再描画
+        renderAnythingEditor();
+
+        // ファイル保存 (JSON出力)
+        const data = {
+            title: defaultAnythingDice.title,
+            options: defaultAnythingDice.options,
+            exportDate: new Date().toISOString()
+        };
+
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `anything_dice_backup.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert("「✨ 何でもダイス」を更新保存し、ファイルをダウンロードしました！");
+    }
 
     // テーマ切替
     function setTheme(themeName, el) {
