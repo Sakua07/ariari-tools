@@ -87,7 +87,7 @@
     }
     input[type="number"] { width: 100px; font-size: 1.2rem; text-align: center; }
     
-    /* 2番専用のデカ説明ボックス */
+    /* 2番専用の説明ボックス */
     .stock-explain-box {
       background: #eefbe8;
       border: 2px solid #4caf50;
@@ -215,6 +215,24 @@
       border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 12px;
     }
 
+    /* モーダル案内ポッアップ */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;
+      padding: 20px; box-sizing: border-box;
+    }
+    .modal-card {
+      background: white; padding: 20px; border-radius: 12px; max-width: 450px; width: 100%;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: left;
+    }
+    .modal-card h3 { margin-top: 0; color: var(--primary); font-size: 1.25rem; }
+    .modal-card ol { padding-left: 20px; margin: 12px 0; }
+    .modal-card li { margin-bottom: 8px; font-weight: bold; }
+    .modal-close-btn {
+      width: 100%; padding: 10px; background: #555; color: white; border: none;
+      border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px;
+    }
+
     @media print {
       body { background: white; color: black; padding: 0; font-size: 12pt; }
       .no-print, .tab-buttons, .print-btn, .sos-container, .save-offline-btn, .disaster-tabs { display: none !important; }
@@ -228,14 +246,14 @@
 <div class="container">
   <h1>防災オールインワン・ガイド</h1>
 
-  <!-- SOSブザー（注意書き追加＆最大音量仕様） -->
+  <!-- SOSブザー -->
   <div class="sos-container no-print">
     <button id="sos-btn" class="sos-btn" onclick="toggleSOS()">🚨 SOSブザー・画面点滅を起動</button>
-    <div class="sos-warning">⚠️ ※（端末自体の音量設定を上げてください）</div>
+    <div class="sos-warning">⚠️ ※最大音量でブザーが鳴ります（端末自体の音量設定をあらかじめ上げてください）</div>
   </div>
   
   <!-- オフライン保存ボタン -->
-  <button class="save-offline-btn no-print" onclick="saveForOffline()">📲 このアプリを端末に保存（オフライン準備）</button>
+  <button class="save-offline-btn no-print" onclick="saveForOffline()">📲 ホーム画面に追加してアプリ化（オフライン準備）</button>
   
   <button class="print-btn no-print" onclick="window.print()">🖨️ 紙に印刷・PDF保存する</button>
 
@@ -261,14 +279,13 @@
     <div class="card">
       <h2>2. 備蓄品のローリングストック期限管理</h2>
       
-      <!-- 大きく目立つ説明文 -->
       <div class="stock-explain-box">
         <div class="stock-explain-title">💡 この機能でできること・使い方</div>
         <div class="stock-explain-text">
           家の非常食や電池の「賞味期限・使用期限」を入れておく欄です。<br>
           ・期限が近づくと自動で <strong>「あと〇日（黄色）」</strong> に変化！<br>
           ・期限が切れると <strong>「期限切れ！（赤色）」</strong> で教えてくれます。<br>
-          買い替え・消費のタイミングが一目でわかり、備蓄忘れを防げます。
+          買い替え・消費のタイミングが一目でわかり、食べ忘れを防げます。
         </div>
       </div>
 
@@ -319,7 +336,7 @@
   <!-- TAB 2: 行動ガイドと171とスマホSOS -->
   <div id="guide-tab" class="tab-content">
     
-    <!-- 超シンプル版 171ガイド -->
+    <!-- 171ガイド -->
     <div class="dial-171">
       <div style="color: var(--danger); font-weight: bold; font-size: 1.2rem; margin-bottom: 10px;">
         📞 災害用伝言ダイヤル「171」超かんたん手順
@@ -473,8 +490,26 @@
 
 </div>
 
+<!-- ホーム画面追加案内モーダル -->
+<div id="install-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>📲 ホーム画面への追加手順</h3>
+    <div id="modal-instructions">
+      <!-- JSで端末別に切り替え -->
+    </div>
+    <button class="modal-close-btn" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
+
 <script>
-  // PWA & オフライン保存機能
+  // PWA & オフラインキャッシュ
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e; // Android/Chrome用のインストールイベントを保持
+  });
+
   if ('serviceWorker' in navigator) {
     const manifest = {
       name: "防災オールインワン・ガイド",
@@ -491,7 +526,7 @@
     document.head.appendChild(mLink);
 
     const swCode = `
-      const CACHE_NAME = 'bousai-pwa-v6';
+      const CACHE_NAME = 'bousai-pwa-v7';
       self.addEventListener('install', e => {
         e.waitUntil(
           caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])).then(() => self.skipWaiting())
@@ -510,13 +545,49 @@
     navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
   }
 
-  // オフライン保存ボタンの動作
-  function saveForOffline() {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      alert("✅ このアプリはすでにスマホ内に保存されています！\nネットが切れてもホーム画面やブラウザからそのまま開けます。");
-    } else {
-      alert("📲 保存処理を行いました！\nスマホの「ホーム画面に追加」を行うと、完全なオフラインアプリとして利用できます。");
+  // 「ホーム画面に追加」ボタンを押したときの処理
+  async function saveForOffline() {
+    // 1. Android/Chromeでインストールダイアログが呼べる場合
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        alert("✅ ホーム画面にアプリを追加しました！");
+      }
+      deferredPrompt = null;
+      return;
     }
+
+    // 2. iPhone (Safari) や直接開けない環境の場合、ポップアップ案内を表示
+    const instructions = document.getElementById('modal-instructions');
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isiOS) {
+      instructions.innerHTML = `
+        <p><strong>【iPhoneでの追加手順】</strong></p>
+        <ol>
+          <li>画面下の <strong>「共有アイコン（四角から矢印が飛び出しているマーク）」</strong> をタップ</li>
+          <li>メニューをスクロールして <strong>「ホーム画面に追加」</strong> を選択</li>
+          <li>右上の <strong>「追加」</strong> を押すと完了です！</li>
+        </ol>
+        <p style="font-size:0.85rem; color:#666;">※データは端末内に保存されたため、電波が切れてもホーム画面のアイコンから起動できます。</p>
+      `;
+    } else {
+      instructions.innerHTML = `
+        <p><strong>【追加手順】</strong></p>
+        <ol>
+          <li>ブラウザの <strong>「メニュー（3つの点 ⋮ または 共有マーク）」</strong> をタップ</li>
+          <li><strong>「ホーム画面に追加」</strong> または <strong>「アプリをインストール」</strong> を選択</li>
+        </ol>
+        <p style="font-size:0.85rem; color:#666;">※データは端末内に保存されたため、電波が切れても起動可能です。</p>
+      `;
+    }
+
+    document.getElementById('install-modal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('install-modal').style.display = 'none';
   }
 
   // 災害種類の切り替え
@@ -527,7 +598,7 @@
     btn.classList.add('active');
   }
 
-  // SOSブザー＆フラッシュ機能（最大音量出力仕様）
+  // SOSブザー＆フラッシュ機能
   let audioCtx = null;
   let oscillator = null;
   let isSosActive = false;
@@ -540,10 +611,8 @@
       const gainNode = audioCtx.createGain();
 
       oscillator.type = 'sine';
-      oscillator.frequency.value = 880; // 高音で目立つ警告音
-      
-      // ブラウザが出せる音量ゲインを最大（1.0）に設定
-      gainNode.gain.value = 1.0;
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 1.0; // 最大音量出力
 
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
@@ -615,14 +684,12 @@
   window.onload = function() {
     calculateSupply();
     
-    // 賞味期限の復元
     document.querySelectorAll('.stock-date').forEach(input => {
       const saved = localStorage.getItem(input.getAttribute('data-key'));
       if (saved) input.value = saved;
     });
     checkDates();
 
-    // メモ入力の保存と復元
     document.querySelectorAll('.memo-input').forEach(textarea => {
       const key = textarea.getAttribute('data-key');
       const saved = localStorage.getItem(key);
@@ -633,7 +700,6 @@
       });
     });
 
-    // チェックボックスの保存と復元
     document.querySelectorAll('input[type="checkbox"]').forEach(box => {
       const id = box.getAttribute('data-id');
       if (localStorage.getItem(id) === 'true') box.checked = true;
