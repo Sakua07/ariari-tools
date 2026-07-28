@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>カスタマイズダイス</title>
+    <!-- html2canvasライブラリの読み込み（要素を画像に変換するために使用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* テーマごとのカラー定義（デフォルト：✨ 何でも無敵） */
         :root {
@@ -461,6 +463,30 @@
             background: var(--bg-main);
             border-color: var(--accent);
         }
+
+        /* 結果コピー用ボタンの追加スタイル */
+        .copy-btn {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--bg-main);
+            border-color: var(--accent);
+        }
     </style>
 </head>
 <body class="theme-special">
@@ -482,7 +508,10 @@
 
     <!-- メインディスプレイ -->
     <div class="card">
-        <div class="dice-display">
+        <!-- 追加：結果コピー用ボタン（結果の上に配置） -->
+        <button id="copy-result-btn" class="copy-btn" onclick="copyResultAsImage()">📋 結果をコピー(共有用)</button>
+
+        <div class="dice-display" id="dice-display-area">
             <div id="dice-type-title" class="dice-type-title">✨ 何でもダイス</div>
             <div id="dice-value" class="dice-value">🎲</div>
         </div>
@@ -564,10 +593,10 @@
             "🗣️ １０文字以内のセリフを言わされる！", 
             "🦵 片足立ちで次のターンを迎えるかpt数分の秒数だ！",
             "🦵 はい！その場でモモ上げ30回！直角にね！！", 
-            "👤 エセ外国人風に食べたい物を伝えよう！（直訳はだめだよ！例ナポリタン　あ～赤いチュルチュル！たべたい！ろんぐろんぐめぇぇえん！！（ノリです、がんばれ））", 
+            "👤 エセ外国人風に食べたい物を伝えよう！（直訳はだめだよ！例ナポリタン あ～赤いチュルチュル！たべたい！ろんぐろんぐめぇぇえん！！（ノリです、がんばれ））", 
             "🗣️ 早口言葉に挑戦",
             "🗣️ ダジャレに挑戦", 
-        　　 "🐶 3回まわって『ご主人様、もっとくれだワン！』",
+           "🐶 3回まわって『ご主人様、もっとくれだワン！』",
             "🤝 リスナーを褒める", "🤝 リスナーに褒められる", 
             "😇 ノープラン（セーフ）"
         ]
@@ -857,6 +886,57 @@
         };
         reader.readAsText(file);
         event.target.value = '';
+    }
+
+    // 追加：結果エリアを画像としてクリップボードへコピーする関数
+    async function copyResultAsImage() {
+        const target = document.getElementById('dice-display-area');
+        const copyBtn = document.getElementById('copy-result-btn');
+
+        if (isRolling) {
+            alert("ダイスが回転中はコピーできません。");
+            return;
+        }
+
+        try {
+            copyBtn.textContent = "⏳ 画像生成中...";
+            
+            // html2canvasでディスプレイ要素をCanvasにレンダリング
+            const canvas = await html2canvas(target, {
+                scale: 2, // 高解像度でコピー
+                useCORS: true,
+                backgroundColor: null
+            });
+
+            // CanvasをBlob(PNG)に変換
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert("画像の作成に失敗しました。");
+                    copyBtn.textContent = "📋 結果をコピー(共有用)";
+                    return;
+                }
+
+                try {
+                    // クリップボードへ書き込み
+                    const item = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+
+                    copyBtn.textContent = "✅ コピーしました！";
+                    setTimeout(() => {
+                        copyBtn.textContent = "📋 結果をコピー(共有用)";
+                    }, 2000);
+                } catch (err) {
+                    console.error(err);
+                    alert("クリップボードへの画像コピーに対応していないブラウザまたは環境です。");
+                    copyBtn.textContent = "📋 結果をコピー(共有用)";
+                }
+            }, "image/png");
+
+        } catch (err) {
+            console.error(err);
+            alert("画像の生成中にエラーが発生しました。");
+            copyBtn.textContent = "📋 結果をコピー(共有用)";
+        }
     }
 </script>
 </body>
