@@ -46,13 +46,13 @@
       min-height: 100vh; box-sizing: border-box;
       position: relative;
     }
-    .container { width: 100%; max-width: 1400px; padding-bottom: 120px; }
+    .container { width: 100%; max-width: 1400px; padding-bottom: 40px; }
     h1 { color: var(--accent); margin-bottom: 15px; font-size: 1.4rem; text-align: center; }
     
     .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; align-items: center; }
     .theme-selector button { padding: 5px 12px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; }
 
-    .layout-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+    .layout-top { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
 
     .panel { background: var(--panel-bg); padding: 12px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
     
@@ -66,10 +66,6 @@
     input, select, button, textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--panel-bg); color: var(--text-color); box-sizing: border-box; }
     button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
     button:hover { background-color: var(--primary-hover); }
-    
-    .counter-box { display: flex; align-items: center; gap: 5px; margin-top: 8px; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 8px; }
-    .btn-step { width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; user-select: none; flex-shrink: 0; }
-    .input-counter { width: 100%; max-width: 50px; text-align: center; font-weight: bold; }
 
     .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 240px; margin: 0 auto 8px auto; }
     .d-pad-btn { background: var(--border-color); color: var(--text-color); }
@@ -108,27 +104,16 @@
 
     #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
 
-    .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px; }
-    .text-panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); margin-top: 15px; }
-
-    .fixed-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel-bg); border-top: 2px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 999; flex-wrap: wrap; }
-    .quick-counter { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: bold; }
-
     .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; font-weight: bold; }
     .toast.show { opacity: 1; }
 
     .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
     .checkbox-label input { cursor: pointer; }
 
-    #editToggleContainer { position:fixed; top:20px; right:20px; z-index:10000; }
-    #editToggleBtn { background-color: var(--primary); color:white; border:none; border-radius:15px; width:100px; height:38px; font-weight:bold; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
+    .extra-bar { margin-top: 15px; background: var(--panel-bg); padding: 12px; border-radius: 15px; border: 1px solid var(--border-color); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   </style>
 </head>
 <body>
-
-<div id="editToggleContainer">
-  <button id="editToggleBtn">データ管理</button>
-</div>
 
 <div class="container">
     <h1>🌸マップすごろく ＆ 進捗ツール🌸</h1>
@@ -141,7 +126,7 @@
         <button onclick="setTheme('dark')" style="background:#334155;">ダーク</button>
     </div>
 
-    <div class="layout-top">
+    <div class="layout-top" style="grid-template-columns: repeat(2, 1fr);">
         <div class="panel" id="panel-1">
             <div>
                 <div class="panel-header">
@@ -192,96 +177,54 @@
                         <button class="btn-misc btn-green" onclick="undoMove()">↩️ 1つ戻る</button>
                         <button class="btn-misc" style="background:#f59e0b;" onclick="resetCurrentOnly()">📍 現在地のみリセット</button>
                         <button class="btn-misc" style="background:#ef4444;" onclick="resetStartAndSteps()">🚶 スタート＆歩数をリセット</button>
-                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()"> 全てをリセット</button>
+                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()">🗑️ 全てをリセット</button>
                         <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
                         <button class="btn-misc" style="background:#eab308;" onclick="swapStartGoal()">🔄 スタートとゴールを逆にする</button>
-                        <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                        <input type="file" id="input-player-img" accept="image/*" style="display: none;">
                     </div>
                 </div>
 
                 <div class="sub-note">※マップをタップでも操作できるよ！</div>
             </div>
         </div>
+    </div>
 
-        <div class="panel" id="panel-3">
-            <div>
-                <div class="panel-header">
-                    <span class="section-num">3.</span>
-                    <input type="text" class="panel-title" id="p3-name" value="保存・出力・復元">
-                </div>
-                <div style="font-weight: bold; text-align: center; margin: 4px 0;">
-                    👟 歩数: <span id="step-count" style="font-size: 1.1rem; color: var(--primary);">0</span>
-                </div>
-
-                <label class="checkbox-label" style="margin-bottom: 4px;">
-                    <input type="checkbox" id="chk-include-zoom" checked> 🔍 右下にコマの拡大図を含める
-                </label>
-                <label class="checkbox-label" style="margin-bottom: 6px;">
-                    <input type="checkbox" id="chk-fill-gap" onchange="renderGrid()"> 🧩 マス目の隙間を埋める
-                </label>
-
-                <div class="btn-col">
-                    <button id="btn-download" style="background: #0ea5e9;">💾 結果画像を保存 (元サイズ)</button>
-                    <button id="btn-copy" class="btn-green">📋 画像をクリップボードにコピー</button>
-                    
-                    <div style="display: flex; gap: 4px; margin-top: 4px;">
-                        <button id="backupButton" style="background:#8b5cf6; flex:1; font-size:0.8rem; padding:6px;">📤 バックアップ</button>
-                        <button id="restoreButton" style="background:#10b981; flex:1; font-size:0.8rem; padding:6px;">📥 復元</button>
-                    </div>
-                </div>
+    <!-- 保存・バックアップ・画像保存の操作バー -->
+    <div class="extra-bar">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+            <label class="checkbox-label" style="margin: 0;">
+                <input type="checkbox" id="chk-include-zoom" checked> 🔍 右下にコマの拡大図を含める
+            </label>
+            <label class="checkbox-label" style="margin: 0;">
+                <input type="checkbox" id="chk-fill-gap" onchange="renderGrid()"> 🧩 マス目の隙間を埋める
+            </label>
+            <div style="font-weight: bold; margin-left: auto;">
+                👟 歩数: <span id="step-count" style="font-size: 1.1rem; color: var(--primary);">0</span>
             </div>
-            <div class="counter-box">
-                <span style="font-size:0.8rem; font-weight:bold; flex:1;">進捗:</span>
-                <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
-                <input type="number" id="p3-val" class="input-counter" value="0" oninput="updateTextOutput()">
-                <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
-            </div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 5px;">
+            <button id="btn-download" style="background: #0ea5e9; flex: 1; padding: 8px;">💾 結果画像を保存 (元サイズ)</button>
+            <button id="btn-copy" class="btn-green" style="flex: 1; padding: 8px;">📋 画像をクリップボードにコピー</button>
+            <button id="backupButton" style="background:#8b5cf6; padding: 8px 12px;">📤 バックアップ</button>
+            <button id="restoreButton" style="background:#10b981; padding: 8px 12px;">📥 復元</button>
         </div>
     </div>
 
-    <div class="map-container-wrapper">
+    <div class="map-container-wrapper" style="margin-top: 15px;">
         <div id="stage-wrapper" class="map-stage">
             <canvas id="bg-canvas"></canvas>
             <div id="grid" class="grid"></div>
         </div>
-    </div>
-
-    <div class="text-panel">
-        <h3 style="margin-top:0; color:var(--accent);">📝 定型文自動生成 ＆ 出力</h3>
-        <div class="control-group">
-            <label>前に追加する文章 (接頭辞):</label>
-            <input type="text" id="text-prefix" value="【定期】マップ進行度" oninput="updateTextOutput()">
-            
-            <label>自動生成テキスト:</label>
-            <textarea id="text-output" rows="3" readonly></textarea>
-            
-            <label>後ろに追加する文章 (接尾辞):</label>
-            <input type="text" id="text-suffix" value=" ゴールさせてぇぇえええ泣泣" oninput="updateTextOutput()">
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="copyGeneratedText()" class="btn-green" style="flex:1;">📋 文章をコピー</button>
-            <button onclick="downloadTextAsImage()" style="background:#0ea5e9; flex:1;">🖼️ 文章結果を画像で保存</button>
-            <button onclick="copyTextAsImage()" style="background:#8b5cf6; flex:1;">📋 文章結果画像をコピー</button>
-        </div>
-    </div>
-</div>
-
-<div class="fixed-bottom-bar">
-    <div class="quick-counter">
-        <span id="quick-p3-label">パネル3</span>:
-        <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
-        <span id="quick-p3-val">0</span>
-        <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
     </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-    // ---------- IndexedDB 初期化 (音声・画像の大容量データ安全保持用) ----------
     let db = null;
     let dbReadyResolve;
     const dbReadyPromise = new Promise((res) => { dbReadyResolve = res; });
+    window.dbReadyPromise = dbReadyPromise;
 
     const openReq = indexedDB.open("SugorokuAssetDB", 1);
     openReq.onupgradeneeded = function(e) {
@@ -295,25 +238,26 @@
       dbReadyResolve();
     };
     openReq.onerror = function() {
-      console.error("IndexedDB error", openReq.error);
       dbReadyResolve();
     };
 
     function putToDB(key, blob) {
       return new Promise((resolve, reject) => {
         try {
+          if (!db) { resolve(); return; }
           const tx = db.transaction("assets", "readwrite");
           const store = tx.objectStore("assets");
           const req = store.put(blob, key);
           req.onsuccess = () => resolve();
           req.onerror = (e) => reject(e);
-        } catch (err) { reject(err); }
+        } catch (err) { resolve(); }
       });
     }
 
     function getFromDB(key) {
       return new Promise((resolve) => {
         try {
+          if (!db) { resolve(null); return; }
           const tx = db.transaction("assets", "readonly");
           const store = tx.objectStore("assets");
           const req = store.get(key);
@@ -323,7 +267,6 @@
       });
     }
 
-    // ---------- 状態変数 ----------
     let cols = 8, rows = 8;
     let gridData = [], textData = [], revealedGrid = [];
     let startPos = { r: 7, c: 7 }, goalPos = { r: 0, c: 0 }, currentPos = { r: 7, c: 7 };
@@ -438,7 +381,6 @@
         }
     }
 
-    // コマ画像アップロード
     document.getElementById('input-player-img').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -456,7 +398,6 @@
         }
     });
 
-    // 背景画像アップロード
     document.getElementById('input-bg-img').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -539,7 +480,6 @@
             }
         }
         stepCountEl.textContent = stepCount;
-        updateTextOutput();
         setTimeout(resizeCanvases, 10);
     }
 
@@ -574,51 +514,6 @@
         renderGrid();
     }
 
-    function changeCount(panelId, delta) {
-        const input = document.getElementById(`${panelId}-val`);
-        let val = parseInt(input.value) || 0;
-        val += delta;
-        input.value = val;
-        updateTextOutput();
-    }
-
-    function updateTextOutput() {
-        const p1Name = document.getElementById('p1-name').value;
-        const p1Val = document.getElementById('p1-val').value;
-        const p2Name = document.getElementById('p2-name').value;
-        const p2Val = document.getElementById('p2-val').value;
-        const p3Name = document.getElementById('p3-name').value;
-        const p3Val = document.getElementById('p3-val').value;
-
-        document.getElementById('quick-p3-label').textContent = p3Name;
-        document.getElementById('quick-p3-val').textContent = p3Val;
-
-        let totalWalkable = 0;
-        let revealedCount = 0;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (gridData[r] && gridData[r][c] !== 1) {
-                    totalWalkable++;
-                    if (revealedGrid[r] && revealedGrid[r][c]) {
-                        revealedCount++;
-                    }
-                }
-            }
-        }
-        const progressPercent = totalWalkable > 0 ? Math.round((revealedCount / totalWalkable) * 100) : 0;
-
-        const prefix = document.getElementById('text-prefix').value;
-        const suffix = document.getElementById('text-suffix').value;
-        
-        const generated = `${prefix}${progressPercent}% 現在${stepCount}歩 (${p1Name}${p1Val}/${p2Name}${p2Val}/${p3Name}${p3Val})${suffix}`;
-
-        document.getElementById('text-output').value = generated;
-    }
-
-    ['p1-name', 'p2-name', 'p3-name'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateTextOutput);
-    });
-
     document.getElementById('btn-apply-size').onclick = () => { initMap(true); showToast("サイズ変更しました！"); };
     document.getElementById('btn-random-pos').onclick = () => {
         startPos = { r: Math.floor(Math.random()*rows), c: Math.floor(Math.random()*cols) };
@@ -627,8 +522,7 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    // ---------- バックアップ・復元処理（IndexedDB対応） ----------
-    async function blobToDataURL(blob) {
+    function blobToDataURL(blob) {
         return new Promise((res, rej) => {
             const r = new FileReader();
             r.onload = () => res(r.result);
@@ -638,34 +532,41 @@
     }
 
     document.getElementById('backupButton').onclick = async () => {
-        await dbReadyPromise;
+        let pIconDataUrl = '';
+        let bgImgDataUrl = '';
+        
         try {
-            let pIconDataUrl = '';
-            if (playerIconBlobKey) {
-                const blob = await getFromDB(playerIconBlobKey);
-                if (blob) pIconDataUrl = await blobToDataURL(blob);
+            if (window.dbReadyPromise) await window.dbReadyPromise;
+            
+            if (playerIconBlobKey && typeof getFromDB === 'function') {
+                try {
+                    const blob = await getFromDB(playerIconBlobKey);
+                    if (blob) pIconDataUrl = await blobToDataURL(blob);
+                } catch (e) { console.warn("コマ画像のバックアップをスキップします"); }
             }
-            let bgImgDataUrl = '';
-            if (bgImageBlobKey) {
-                const blob = await getFromDB(bgImageBlobKey);
-                if (blob) bgImgDataUrl = await blobToDataURL(blob);
+            
+            if (bgImageBlobKey && typeof getFromDB === 'function') {
+                try {
+                    const blob = await getFromDB(bgImageBlobKey);
+                    if (blob) bgImgDataUrl = await blobToDataURL(blob);
+                } catch (e) { console.warn("背景画像のバックアップをスキップします"); }
             }
+        } catch (dbErr) {
+            console.warn("DBデータ読み込みエラーを無視して続行します", dbErr);
+        }
 
+        try {
             const backupObj = {
                 cols, rows, gridData, textData, revealedGrid,
                 startPos, goalPos, currentPos, moveHistory, stepCount,
                 p1Name: document.getElementById('p1-name').value,
-                p1Val: document.getElementById('p1-val').value,
                 p2Name: document.getElementById('p2-name').value,
-                p2Val: document.getElementById('p2-val').value,
-                p3Name: document.getElementById('p3-name').value,
-                p3Val: document.getElementById('p3-val').value,
-                prefix: document.getElementById('text-prefix').value,
-                suffix: document.getElementById('text-suffix').value,
-                playerIconDataUrl, bgImgDataUrl
+                playerIconDataUrl: pIconDataUrl,
+                bgImgDataUrl: bgImgDataUrl
             };
 
-            const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });
+            const jsonString = JSON.stringify(backupObj, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -674,8 +575,8 @@
             URL.revokeObjectURL(url);
             showToast("バックアップファイルを作成しました！");
         } catch (err) {
-            console.error(err);
-            alert("バックアップに失敗しました。");
+            console.error("バックアップ保存エラー:", err);
+            alert("バックアップのファイル生成に失敗しました。データ量やメモリ制限を確認してください。");
         }
     };
 
@@ -708,44 +609,43 @@
                     stepCount = data.stepCount || 0;
 
                     if (data.p1Name) document.getElementById('p1-name').value = data.p1Name;
-                    if (data.p1Val) document.getElementById('p1-val').value = data.p1Val;
                     if (data.p2Name) document.getElementById('p2-name').value = data.p2Name;
-                    if (data.p2Val) document.getElementById('p2-val').value = data.p2Val;
-                    if (data.p3Name) document.getElementById('p3-name').value = data.p3Name;
-                    if (data.p3Val) document.getElementById('p3-val').value = data.p3Val;
-                    if (data.prefix) document.getElementById('text-prefix').value = data.prefix;
-                    if (data.suffix) document.getElementById('text-suffix').value = data.suffix;
 
                     if (data.playerIconDataUrl) {
-                        const res = await fetch(data.playerIconDataUrl);
-                        const blob = await res.blob();
-                        playerIconBlobKey = 'playerIcon_' + Date.now();
-                        await putToDB(playerIconBlobKey, blob);
-                        playerIconSrc = data.playerIconDataUrl;
+                        try {
+                            const res = await fetch(data.playerIconDataUrl);
+                            const blob = await res.blob();
+                            playerIconBlobKey = 'playerIcon_' + Date.now();
+                            await putToDB(playerIconBlobKey, blob);
+                            playerIconSrc = data.playerIconDataUrl;
+                        } catch(e) { playerIconSrc = null; }
                     } else {
                         playerIconSrc = null;
                         playerIconBlobKey = null;
                     }
 
                     if (data.bgImgDataUrl) {
-                        const res = await fetch(data.bgImgDataUrl);
-                        const blob = await res.blob();
-                        bgImageBlobKey = 'bgImage_' + Date.now();
-                        await putToDB(bgImageBlobKey, blob);
-                        bgImageSrc = data.bgImgDataUrl;
-                        bgImage = new Image();
-                        bgImage.onload = function() {
-                            renderGrid();
-                            showToast("データを復元しました！");
-                        };
-                        bgImage.src = bgImageSrc;
-                    } else {
-                        bgImage = null;
-                        bgImageSrc = null;
-                        bgImageBlobKey = null;
-                        renderGrid();
-                        showToast("データを復元しました！");
+                        try {
+                            const res = await fetch(data.bgImgDataUrl);
+                            const blob = await res.blob();
+                            bgImageBlobKey = 'bgImage_' + Date.now();
+                            await putToDB(bgImageBlobKey, blob);
+                            bgImageSrc = data.bgImgDataUrl;
+                            bgImage = new Image();
+                            bgImage.onload = function() {
+                                renderGrid();
+                                showToast("データを復元しました！");
+                            };
+                            bgImage.src = bgImageSrc;
+                            return;
+                        } catch(e) { bgImage = null; }
                     }
+                    
+                    bgImage = null;
+                    bgImageSrc = null;
+                    bgImageBlobKey = null;
+                    renderGrid();
+                    showToast("データを復元しました！");
                 } catch (err) {
                     console.error(err);
                     alert("復元に失敗しました。ファイル形式を確認してください。");
@@ -756,7 +656,6 @@
         input.click();
     };
 
-    // ---------- 画像出力処理 ----------
     function generateFullResolutionCanvas(callback) {
         const stage = document.getElementById('stage-wrapper');
         const stageRect = stage.getBoundingClientRect();
@@ -947,59 +846,6 @@
             });
         });
     };
-
-    function copyGeneratedText() {
-        const text = document.getElementById('text-output').value;
-        navigator.clipboard.writeText(text).then(() => {
-            showToast("文章をコピーしたよ！");
-        });
-    }
-
-    function createTextCanvas() {
-        const text = document.getElementById('text-output').value;
-        const canvas = document.createElement('canvas');
-        canvas.width = 800;
-        canvas.height = 200;
-        const ctx = canvas.getContext('2d');
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.strokeStyle = '#ff69b4';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = '#333333';
-        ctx.font = 'bold 22px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 40);
-        return canvas;
-    }
-
-    function downloadTextAsImage() {
-        const canvas = createTextCanvas();
-        const a = document.createElement('a');
-        a.download = 'text-result.png';
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-        showToast("文章画像を保存したよ！");
-    }
-
-    function copyTextAsImage() {
-        if (!navigator.clipboard || !window.ClipboardItem) {
-            showToast("お使いのブラウザは直接コピー非対応です");
-            return;
-        }
-        const canvas = createTextCanvas();
-        canvas.toBlob(blob => {
-            const item = new ClipboardItem({ 'image/png': blob });
-            navigator.clipboard.write([item]).then(() => {
-                showToast("文章画像をコピーしたよ！");
-            });
-        });
-    }
 
     window.onresize = resizeCanvases;
     dbReadyPromise.then(() => { initMap(false); });
