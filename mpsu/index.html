@@ -560,19 +560,11 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    /* バックアップ保存（JSON） ＆ 復元機能 */
+    /* バックアップ保存（JSON） ＆ 復元機能（もとの仕様を維持） */
     function exportBackupData() {
         const backupObj = {
             cols, rows, gridData, textData, revealedGrid,
             startPos, goalPos, currentPos, moveHistory, stepCount,
-            p1Name: document.getElementById('p1-name').value,
-            p1Val: document.getElementById('p1-val').value,
-            p2Name: document.getElementById('p2-name').value,
-            p2Val: document.getElementById('p2-val').value,
-            p3Name: document.getElementById('p3-name').value,
-            p3Val: document.getElementById('p3-val').value,
-            prefix: document.getElementById('text-prefix').value,
-            suffix: document.getElementById('text-suffix').value,
             playerIconSrc, bgImageSrc
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
@@ -604,15 +596,6 @@
                 moveHistory = data.moveHistory;
                 stepCount = data.stepCount;
 
-                document.getElementById('p1-name').value = data.p1Name || "マップ設定";
-                document.getElementById('p1-val').value = data.p1Val || 0;
-                document.getElementById('p2-name').value = data.p2Name || "操作・移動";
-                document.getElementById('p2-val').value = data.p2Val || 0;
-                document.getElementById('p3-name').value = data.p3Name || "保存・出力";
-                document.getElementById('p3-val').value = data.p3Val || 0;
-                document.getElementById('text-prefix').value = data.prefix || "【定期】マップ進行度";
-                document.getElementById('text-suffix').value = data.suffix || " ゴールさせてぇぇえええ泣泣";
-
                 playerIconSrc = data.playerIconSrc || null;
                 bgImageSrc = data.bgImageSrc || null;
 
@@ -634,7 +617,7 @@
         reader.readAsText(file);
     }
 
-    /* 高解像度合成処理 ＆ 右下拡大表示合成（画像が全て隠れるように修正） */
+    /* 高解像度合成処理 ＆ 右下拡大表示合成（画像が綺麗に隠れるように修正） */
     function generateFullResolutionCanvas(callback) {
         const stage = document.getElementById('stage-wrapper');
         const stageRect = stage.getBoundingClientRect();
@@ -656,7 +639,6 @@
         const ctx = outCanvas.getContext('2d');
 
         function drawMapBase(targetCtx, w, h) {
-            // 背景のベース（白）
             targetCtx.fillStyle = '#ffffff';
             targetCtx.fillRect(0, 0, w, h);
 
@@ -664,14 +646,10 @@
             const cellH = h / rows;
 
             if (bgImage) {
-                // 背景画像がある場合：未公開のマスは不透明な白（またはグリッド背景）で完全に隠し、
-                // revealedGridがtrueの場所だけ背景画像が見えるようにマスクする
-                
-                // 1. まずベース全体を白（あるいは不透明な状態）で覆い、未公開部分は画像が見えないようにする
+                // ベースを一度完全に白で塗りつぶしてから、見えているマスだけ背景画像をクリッピング描画
                 targetCtx.fillStyle = '#ffffff';
                 targetCtx.fillRect(0, 0, w, h);
 
-                // 2. 開かれているマスだけ背景画像を描画する
                 targetCtx.save();
                 targetCtx.beginPath();
                 for (let r = 0; r < rows; r++) {
