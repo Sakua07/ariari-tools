@@ -75,7 +75,7 @@
 
         .sub-note { font-size: 0.75rem; opacity: 0.7; text-align: center; margin-top: 4px; font-weight: bold; }
 
-        /* 画面の半分以上を占める超特大プレビューエリア */
+        /* マップ表示エリア */
         .map-container-wrapper { 
             width: 100%; 
             height: 60vh; 
@@ -94,33 +94,55 @@
         }
         .map-stage { position: relative; display: inline-block; width: 100%; height: 100%; max-width: 1200px; display: flex; justify-content: center; align-items: center; }
         
-        /* 隙間埋め切り替え用クラス */
         .grid { display: grid; gap: 6px; background: rgba(0,0,0,0.05); border: 4px solid var(--border-color); border-radius: 12px; width: 100%; height: 100%; max-height: 100%; position: relative; z-index: 2; padding: 6px; box-sizing: border-box; }
         .grid.no-gap { gap: 0px; padding: 0px; }
         
-        .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; font-size: clamp(1rem, 4vw, 2.5rem); border-radius: 6px; position: relative; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .cell { 
+            background: #ffffff; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            position: relative; 
+            color: #333; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            overflow: hidden;
+        }
         .grid.no-gap .cell { border-radius: 0px; box-shadow: none; }
         
         .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
         .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
         .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
         
-        /* 透過マスク用 */
         .cell.revealed { background: transparent !important; box-shadow: none; }
 
         .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
         .player-icon { width: 80%; height: 80%; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-        .cell-text { pointer-events: none; z-index: 2; }
+        
+        .cell-text { 
+            pointer-events: none; 
+            z-index: 2; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 2px; 
+            box-sizing: border-box;
+            word-break: break-all;
+            font-size: clamp(0.5rem, 1.8vw, 1.2rem); 
+            line-height: 1.1;
+        }
 
-        /* 背景画像キャンバス（下層） */
         #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
 
         .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px; }
 
-        /* 定型文エリア */
         .text-panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); margin-top: 15px; }
 
-        /* 画面下部の固定クイック操作バー */
         .fixed-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel-bg); border-top: 2px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 999; flex-wrap: wrap; }
         .quick-counter { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: bold; }
 
@@ -136,7 +158,6 @@
 <div class="container">
     <h1>マップすごろく ＆ 進捗ツール</h1>
 
-    <!-- テーマ変更 -->
     <div class="theme-selector">
         <label style="font-weight: bold;">カラーテーマ:</label>
         <button onclick="setTheme('pink')" style="background:#ff69b4;">ピンク</button>
@@ -146,7 +167,6 @@
     </div>
 
     <div class="layout-top">
-        <!-- パネル 1 -->
         <div class="panel" id="panel-1">
             <div>
                 <div class="panel-header">
@@ -160,14 +180,14 @@
                     <input type="number" id="input-rows" value="8" min="2" max="30">
                     <button id="btn-apply-size">サイズを適用</button>
                     <button id="btn-random-pos" class="btn-green" style="margin-top:2px;">S/Gをランダム配置</button>
+                    <button id="btn-swap-sg-p1" style="background:#eab308; margin-top:2px;" onclick="swapStartGoal()">🔄 スタートとゴールを入れ替える</button>
                     
-                    <label style="margin-top:6px; font-weight:bold;">🖼️ 下に置く画像（1枚絵・立ち絵・ミニキャラ公開など）</label>
+                    <label style="margin-top:6px; font-weight:bold;">🖼️ 下に置く画像（1枚絵など）</label>
                     <input type="file" id="input-bg-img" accept="image/*">
                 </div>
             </div>
         </div>
 
-        <!-- パネル 2 -->
         <div class="panel" id="panel-2">
             <div>
                 <div class="panel-header">
@@ -199,15 +219,15 @@
                         <button class="btn-misc" style="background:#ef4444;" onclick="resetStartAndSteps()">🚶 スタート＆歩数をリセット</button>
                         <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()"> 全てをリセット</button>
                         <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
+                        <button class="btn-misc" style="background:#eab308;" onclick="swapStartGoal()">🔄 スタートとゴールを逆にする</button>
                         <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                     </div>
                 </div>
 
-                <div class="sub-note">※下のマップをタップでも操作できるよ！</div>
+                <div class="sub-note">※マップをタップでも操作できるよ！</div>
             </div>
         </div>
 
-        <!-- パネル 3 -->
         <div class="panel" id="panel-3">
             <div>
                 <div class="panel-header">
@@ -231,7 +251,7 @@
                     <hr style="width:100%; border:0; border-top:1px solid var(--border-color); margin: 2px 0;">
                     <button onclick="exportBackupData()" style="background:#8b5cf6;">📦 バックアップ保存 (JSON)</button>
                     <button onclick="document.getElementById('input-restore-file').click()" style="background:#6366f1;">📂 バックアップから復元</button>
-                    <input type="file" id="input-restore-file" accept=".json" style="display:none;" onchange="importBackupData(event)">
+                    <input type="file" id="input-restore-file" accept=".json,.txt" style="display:none;" onchange="importBackupData(event)">
                 </div>
             </div>
             <div class="counter-box">
@@ -243,7 +263,6 @@
         </div>
     </div>
 
-    <!-- 画面の半分以上を占める超特大マップ表示エリア -->
     <div class="map-container-wrapper">
         <div id="stage-wrapper" class="map-stage">
             <canvas id="bg-canvas"></canvas>
@@ -251,7 +270,6 @@
         </div>
     </div>
 
-    <!-- 定型文生成パネル -->
     <div class="text-panel">
         <h3 style="margin-top:0; color:var(--accent);">📝 定型文自動生成 ＆ 出力</h3>
         <div class="control-group">
@@ -272,7 +290,6 @@
     </div>
 </div>
 
-<!-- 画面下部の固定操作バー (パネル3の進捗のみ表示) -->
 <div class="fixed-bottom-bar">
     <div class="quick-counter">
         <span id="quick-p3-label">パネル3</span>:
@@ -287,7 +304,7 @@
 <script>
     let cols = 8, rows = 8;
     let gridData = [], textData = [], revealedGrid = [];
-    let startPos = { r: 0, c: 0 }, goalPos = { r: 7, c: 7 }, currentPos = { r: 0, c: 0 };
+    let startPos = { r: 7, c: 7 }, goalPos = { r: 0, c: 0 }, currentPos = { r: 7, c: 7 };
     let moveHistory = []; 
     let stepCount = 0;
     let playerIconSrc = null;
@@ -315,11 +332,18 @@
         gridData = Array(rows).fill(0).map(() => Array(cols).fill(0));
         textData = Array(rows).fill("").map(() => Array(cols).fill(""));
         revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
-        startPos = { r: 0, c: 0 }; goalPos = { r: rows - 1, c: cols - 1 };
+        startPos = { r: rows - 1, c: cols - 1 }; goalPos = { r: 0, c: 0 };
         resetStartAndSteps(true);
     }
 
-    /* リセット機能群 */
+    function swapStartGoal() {
+        const temp = { ...startPos };
+        startPos = { ...goalPos };
+        goalPos = temp;
+        renderGrid();
+        showToast("スタートとゴールを入れ替えました！");
+    }
+
     function resetCurrentOnly() {
         if (confirm("現在地と移動履歴をリセットしますか？")) {
             moveHistory = [];
@@ -366,13 +390,12 @@
         }
     }
 
-    /* 誤操作対策付き 1つ戻る */
     function undoMove() {
         if (moveHistory.length === 0) {
             showToast("これ以上戻れません");
             return;
         }
-        if (confirm("ひとつ前に戻しますか？（操作ミス防止の確認）")) {
+        if (confirm("ひとつ前に戻しますか？")) {
             currentPos = moveHistory.pop();
             stepCount = Math.max(0, stepCount - 1);
             renderGrid();
@@ -393,7 +416,6 @@
         }
     }
 
-    // 背景画像のアップロード
     document.getElementById('input-bg-img').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -457,12 +479,12 @@
                     if (playerIconSrc) {
                         cell.innerHTML += `<img src="${playerIconSrc}" class="player-icon" alt="コマ">`;
                     } else {
-                        cell.innerHTML += '📍';
+                        cell.innerHTML += '<div style="position:absolute; z-index:3; font-size:1.2rem;">📍</div>';
                     }
                 }
                 
                 if (showText && textData[r][c]) {
-                    cell.innerHTML += `<span class="cell-text">${textData[r][c]}</span>`;
+                    cell.innerHTML += `<div class="cell-text">${textData[r][c]}</div>`;
                 }
 
                 cell.onclick = () => handleCellClick(r, c);
@@ -505,7 +527,6 @@
         renderGrid();
     }
 
-    /* パネル進捗(+/-)ボタン機能 */
     function changeCount(panelId, delta) {
         const input = document.getElementById(`${panelId}-val`);
         let val = parseInt(input.value) || 0;
@@ -514,7 +535,6 @@
         updateTextOutput();
     }
 
-    /* リアルタイム定型文更新処理 */
     function updateTextOutput() {
         const p1Name = document.getElementById('p1-name').value;
         const p1Val = document.getElementById('p1-val').value;
@@ -560,7 +580,7 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    /* バックアップ保存（JSON） ＆ 復元機能 */
+    /* --- 修正版：確実なバックアップ保存と復元 --- */
     function exportBackupData() {
         const backupObj = {
             cols, rows, gridData, textData, revealedGrid,
@@ -575,34 +595,48 @@
             suffix: document.getElementById('text-suffix').value,
             playerIconSrc, bgImageSrc
         };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
-        const a = document.createElement('a');
-        a.setAttribute("href", dataStr);
-        a.setAttribute("download", `map_backup_${new Date().toISOString().slice(0,10)}.json`);
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        showToast("バックアップファイルを保存しました！");
+
+        try {
+            const jsonString = JSON.stringify(backupObj, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sugoroku_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("バックアップファイルを保存しました！");
+        } catch (err) {
+            console.error(err);
+            alert("保存に失敗しました: " + err.message);
+        }
     }
 
     function importBackupData(e) {
         const file = e.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = function(evt) {
             try {
                 const data = JSON.parse(evt.target.result);
-                cols = data.cols; rows = data.rows;
+                
+                cols = data.cols || 8;
+                rows = data.rows || 8;
                 document.getElementById('input-cols').value = cols;
                 document.getElementById('input-rows').value = rows;
-                gridData = data.gridData;
-                textData = data.textData;
-                revealedGrid = data.revealedGrid;
-                startPos = data.startPos;
-                goalPos = data.goalPos;
-                currentPos = data.currentPos;
-                moveHistory = data.moveHistory;
-                stepCount = data.stepCount;
+                
+                gridData = data.gridData || Array(rows).fill(0).map(() => Array(cols).fill(0));
+                textData = data.textData || Array(rows).fill("").map(() => Array(cols).fill(""));
+                revealedGrid = data.revealedGrid || Array(rows).fill(false).map(() => Array(cols).fill(false));
+                
+                startPos = data.startPos || { r: rows - 1, c: cols - 1 };
+                goalPos = data.goalPos || { r: 0, c: 0 };
+                currentPos = data.currentPos || { ...startPos };
+                moveHistory = data.moveHistory || [];
+                stepCount = data.stepCount || 0;
 
                 document.getElementById('p1-name').value = data.p1Name || "マップ設定";
                 document.getElementById('p1-val').value = data.p1Val || 0;
@@ -620,21 +654,26 @@
                     bgImage = new Image();
                     bgImage.onload = function() {
                         renderGrid();
+                        showToast("バックアップから復元しました！");
                     };
                     bgImage.src = bgImageSrc;
                 } else {
                     bgImage = null;
                     renderGrid();
+                    showToast("バックアップから復元しました！");
                 }
-                showToast("データを復元しました！");
             } catch (err) {
-                alert("バックアップファイルの読み込みに失敗しました。");
+                console.error(err);
+                alert("バックアップファイルの形式が正しくないか、読み込みに失敗しました。");
+            } finally {
+                // 同じファイルを再度選択できるようにリセット
+                e.target.value = '';
             }
         };
         reader.readAsText(file);
     }
+    /* ---------------------------------------------------- */
 
-    /* 高解像度合成処理 ＆ 右下拡大表示合成 */
     function generateFullResolutionCanvas(callback) {
         const stage = document.getElementById('stage-wrapper');
         const stageRect = stage.getBoundingClientRect();
@@ -692,9 +731,6 @@
                 targetCtx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
                 targetCtx.lineWidth = 2;
             }
-            targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
-            targetCtx.textAlign = 'center';
-            targetCtx.textBaseline = 'middle';
 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
@@ -713,19 +749,31 @@
                         targetCtx.fillStyle = 'rgba(50, 205, 50, 0.7)';
                         targetCtx.fillRect(x, y, cellW, cellH);
                         targetCtx.fillStyle = '#fff';
+                        targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
+                        targetCtx.textAlign = 'center';
+                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('S', x + cellW / 2, y + cellH / 2);
                     }
                     if (r === goalPos.r && c === goalPos.c) {
                         targetCtx.fillStyle = 'rgba(255, 69, 0, 0.7)';
                         targetCtx.fillRect(x, y, cellW, cellH);
                         targetCtx.fillStyle = '#fff';
+                        targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
+                        targetCtx.textAlign = 'center';
+                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('G', x + cellW / 2, y + cellH / 2);
                     }
                     if (r === currentPos.r && c === currentPos.c) {
+                        targetCtx.font = `${cellH * 0.5}px sans-serif`;
+                        targetCtx.textAlign = 'center';
+                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('📍', x + cellW / 2, y + cellH / 2);
                     }
                     if (showText && textData[r][c]) {
                         targetCtx.fillStyle = '#000';
+                        targetCtx.font = `bold ${Math.max(10, cellH * 0.28)}px sans-serif`;
+                        targetCtx.textAlign = 'center';
+                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText(textData[r][c], x + cellW / 2, y + cellH / 2);
                     }
                 }
