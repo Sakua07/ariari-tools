@@ -50,6 +50,70 @@
       font-size: 0.85rem; color: #d32f2f; font-weight: bold; text-align: center; margin-top: 6px;
     }
 
+    /* 緊急通報ダイヤルパネル（ブザー鳴動時に表示） */
+    .emergency-dial-panel {
+      display: none;
+      background: #ffffff;
+      border: 3px solid var(--danger);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .emergency-dial-panel.active {
+      display: block;
+    }
+    .emergency-dial-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--danger);
+      text-align: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--danger);
+      padding-bottom: 6px;
+    }
+    .emergency-item {
+      background: #fff8f8;
+      border: 1px solid #ffcdd2;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .emergency-item:last-child {
+      margin-bottom: 0;
+    }
+    .emergency-title {
+      font-size: 1.1rem;
+      color: #111;
+      margin-bottom: 4px;
+    }
+    .emergency-desc {
+      font-size: 0.9rem;
+      color: #444;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .call-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      background: var(--danger);
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      box-sizing: border-box;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .call-btn:active {
+      background: #b71c1c;
+    }
+
     /* オフライン保存ボタン */
     .save-offline-btn {
       width: 100%; padding: 12px; background: #2e7d32; color: white;
@@ -250,6 +314,53 @@
   <div class="sos-container no-print">
     <button id="sos-btn" class="sos-btn" onclick="toggleSOS()">🚨 SOSブザー・画面点滅を起動</button>
     <div class="sos-warning">⚠️ ※端末自体の音量設定をあらかじめ上げてください</div>
+
+    <!-- SOS起動時に表示される緊急ダイヤル一覧 -->
+    <div id="emergency-dial-panel" class="emergency-dial-panel">
+      <div class="emergency-dial-title">📞 緊急連絡先通報ダイヤル</div>
+      
+      <!-- 警察 (110) -->
+      <div class="emergency-item">
+        <div class="emergency-title">110番へかける　<strong>警察</strong></div>
+        <div class="emergency-desc">事件、事故、防犯、暴行、不審者などの緊急時に通報します。</div>
+        <a href="tel:110" class="call-btn">📞 110番へ電話をかける</a>
+      </div>
+
+      <!-- 消防・救急 (119) -->
+      <div class="emergency-item">
+        <div class="emergency-title">119番へかける　<strong>火事や病気、けが</strong></div>
+        <div class="emergency-desc">火災の発覚、急病、ケガ、救助が必要な事故の際に通報します。</div>
+        <a href="tel:119" class="call-btn">📞 119番へ電話をかける</a>
+      </div>
+
+      <!-- 海上保安庁 (118) -->
+      <div class="emergency-item">
+        <div class="emergency-title">118番へかける　<strong>海の事件や事故</strong></div>
+        <div class="emergency-desc">海での遭難、事故、油漏れ、不審船などの連絡に使用します。</div>
+        <a href="tel:118" class="call-btn">📞 118番へ電話をかける</a>
+      </div>
+
+      <!-- 道路緊急ダイヤル (#9910) -->
+      <div class="emergency-item">
+        <div class="emergency-title">#9910へかける　<strong>道路の異状・移動中の危険</strong></div>
+        <div class="emergency-desc">道路の穴ぼこ、落石、路肩の崩壊など交通危険の通報ダイヤルです。</div>
+        <a href="tel:#9910" class="call-btn">📞 #9910へ電話をかける</a>
+      </div>
+
+      <!-- 小児救急電話相談 (#8000) -->
+      <div class="emergency-item">
+        <div class="emergency-title">#8000へかける　<strong>子ども医療電話相談</strong></div>
+        <div class="emergency-desc">夜間や休日の子どもの急な病気やケガ、対処に困った際に相談できます。</div>
+        <a href="tel:#8000" class="call-btn">📞 #8000へ電話をかける</a>
+      </div>
+
+      <!-- 災害用伝言ダイヤル (171) -->
+      <div class="emergency-item">
+        <div class="emergency-title">171へかける　<strong>災害用伝言ダイヤル</strong></div>
+        <div class="emergency-desc">大規模災害時に固定電話や携帯電話から声の伝言を残す・確認できます。</div>
+        <a href="tel:171" class="call-btn">📞 171へ電話をかける</a>
+      </div>
+    </div>
   </div>
   
   <!-- オフライン保存ボタン -->
@@ -606,6 +717,8 @@
 
   function toggleSOS() {
     const btn = document.getElementById('sos-btn');
+    const dialPanel = document.getElementById('emergency-dial-panel');
+
     if (!isSosActive) {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       oscillator = audioCtx.createOscillator();
@@ -622,6 +735,7 @@
       document.body.classList.add('sos-active');
       btn.textContent = '🟩 SOSブザー・画面点滅を停止';
       btn.style.backgroundColor = '#388e3c';
+      if (dialPanel) dialPanel.classList.add('active');
       isSosActive = true;
     } else {
       if (oscillator) {
@@ -631,6 +745,7 @@
       document.body.classList.remove('sos-active');
       btn.textContent = '🚨 SOSブザー・画面点滅を起動';
       btn.style.backgroundColor = '#d32f2f';
+      if (dialPanel) dialPanel.classList.remove('active');
       isSosActive = false;
     }
   }
