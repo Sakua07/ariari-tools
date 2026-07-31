@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マップすごろくツール</title>
+    <title>拡張版 マップすごろくツール</title>
     <style>
         :root {
             --bg-color: #fff0f5;
@@ -20,137 +20,284 @@
             --green-btn-hover: #059669;
         }
 
-        body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1000px; }
+        /* カラーテーマ設定 */
+        body.theme-blue {
+            --bg-color: #e0f2fe; --panel-bg: #ffffff; --text-color: #1e293b;
+            --border-color: #bae6fd; --primary: #0284c7; --primary-hover: #0369a1;
+            --accent: #0369a1; --cell-wall: #94a3b8;
+        }
+        body.theme-green {
+            --bg-color: #f0fdf4; --panel-bg: #ffffff; --text-color: #14532d;
+            --border-color: #bbf7d0; --primary: #16a34a; --primary-hover: #15803d;
+            --accent: #15803d; --cell-wall: #86efac;
+        }
+        body.theme-dark {
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-color: #f8fafc;
+            --border-color: #334155; --primary: #38bdf8; --primary-hover: #0284c7;
+            --accent: #38bdf8; --cell-wall: #475569;
+        }
+
+        body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s, color 0.3s; }
+        .container { width: 100%; max-width: 1400px; padding-bottom: 120px; }
         h1 { font-size: 1.4rem; text-align: center; color: var(--accent); margin-bottom: 15px; }
         
-        /* 1, 2, 3 のパネルを3列配置（画面が狭いときは自動縮小・折返し） */
-        .layout-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
-        @media (max-width: 768px) { .layout-top { grid-template-columns: 1fr; } }
+        .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; align-items: center; }
 
-        .panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(255, 182, 193, 0.3); border: 1px solid rgba(255, 192, 203, 0.5); display: flex; flex-direction: column; justify-content: space-between; }
-        h2 { font-size: 0.95rem; margin-top: 0; margin-bottom: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+        /* パネルレイアウト (常に横並び3列を維持) */
+        .layout-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+
+        .panel { background: var(--panel-bg); padding: 12px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
         
-        .section-num { font-size: 1.35rem; font-weight: bold; color: var(--primary); line-height: 1; }
+        .panel-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; }
+        .panel-title { font-size: 0.95rem; font-weight: bold; color: var(--accent); border: none; background: transparent; width: 100%; outline: none; }
+        .panel-title:focus { background: rgba(0,0,0,0.05); }
 
-        .control-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-        input, select, button { padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; }
+        .section-num { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-right: 4px; }
+
+        .control-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+        input, select, button, textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--panel-bg); color: var(--text-color); box-sizing: border-box; }
         button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background-color: var(--primary-hover); }
         
+        /* 数値進捗コントロール */
+        .counter-box { display: flex; align-items: center; gap: 5px; margin-top: 8px; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 8px; }
+        .btn-step { width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; user-select: none; flex-shrink: 0; }
+        .input-counter { width: 100%; max-width: 50px; text-align: center; font-weight: bold; }
+
         /* 操作系 */
-        .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 200px; margin: 0 auto 8px auto; }
-        .d-pad-btn { background: #ffb6c1; }
-        .d-pad-btn:hover { background: #ff69b4; }
+        .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 240px; margin: 0 auto 8px auto; }
+        .d-pad-btn { background: var(--border-color); color: var(--text-color); }
+        .d-pad-btn:hover { background: var(--primary); color: white; }
         
-        .btn-green { background: var(--green-btn); }
+        .btn-green { background: var(--green-btn); color: white; }
         .btn-green:hover { background: var(--green-btn-hover); }
+        .btn-misc { grid-column: span 3; font-size: 0.8rem; padding: 6px; }
 
-        .btn-misc { grid-column: span 3; }
+        .sub-note { font-size: 0.75rem; opacity: 0.7; text-align: center; margin-top: 4px; font-weight: bold; }
 
-        /* 補足案内テキスト */
-        .sub-note { font-size: 0.75rem; color: #777; text-align: center; margin-top: 4px; font-weight: bold; }
-
-        /* マップ表示エリア（大きく確保） */
-        .map-container-wrapper { width: 100%; min-height: 450px; overflow: auto; border: 2px solid var(--border-color); border-radius: 12px; background: #ffffff; padding: 15px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; }
-        .grid { display: grid; gap: 4px; background: #ffe4e1; border: 4px solid #ffe4e1; border-radius: 8px; width: 100%; max-width: 800px; }
-        .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; aspect-ratio: 1; font-size: clamp(0.8rem, 2.5vw, 1.2rem); border-radius: 4px; position: relative; }
-        .cell.wall { background-color: var(--cell-wall); color: #ffffff; }
+        /* 画面の半分以上を占める超特大プレビューエリア */
+        .map-container-wrapper { 
+            width: 100%; 
+            height: 60vh; 
+            min-height: 500px;
+            overflow: auto; 
+            border: 3px solid var(--border-color); 
+            border-radius: 16px; 
+            background: #ffffff; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.03);
+        }
+        .map-stage { position: relative; display: inline-block; width: 100%; height: 100%; max-width: 1200px; display: flex; justify-content: center; align-items: center; }
+        
+        /* 隙間埋め切り替え用クラス */
+        .grid { display: grid; gap: 6px; background: rgba(0,0,0,0.05); border: 4px solid var(--border-color); border-radius: 12px; width: 100%; height: 100%; max-height: 100%; position: relative; z-index: 2; padding: 6px; box-sizing: border-box; }
+        .grid.no-gap { gap: 0px; padding: 0px; }
+        
+        .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; font-size: clamp(1rem, 4vw, 2.5rem); border-radius: 6px; position: relative; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .grid.no-gap .cell { border-radius: 0px; box-shadow: none; }
+        
+        .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
         .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
         .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
         
-        .badge { position: absolute; top: 1px; left: 1px; font-size: 0.55rem; padding: 1px 2px; border-radius: 3px; color: white; background: rgba(0,0,0,0.3); pointer-events: none; }
-        
-        /* コマ用画像のスタイル */
-        .player-icon { width: 75%; height: 75%; object-fit: contain; pointer-events: none; }
+        /* 透過マスク用 */
+        .cell.revealed { background: transparent !important; box-shadow: none; }
 
-        .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+        .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
+        .player-icon { width: 80%; height: 80%; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .cell-text { pointer-events: none; z-index: 2; }
 
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(219, 112, 147, 0.9); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
+        /* 背景画像キャンバス（下層） */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
+
+        .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px; }
+
+        /* 定型文エリア */
+        .text-panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); margin-top: 15px; }
+
+        /* 画面下部の固定クイック操作バー */
+        .fixed-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel-bg); border-top: 2px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 999; flex-wrap: wrap; }
+        .quick-counter { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: bold; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; font-weight: bold; }
         .toast.show { opacity: 1; }
+
+        .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
+        .checkbox-label input { cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>マップすごろくツール</h1>
+    <h1>マップすごろく ＆ 進捗ツール</h1>
+
+    <!-- テーマ変更 -->
+    <div class="theme-selector">
+        <label style="font-weight: bold;">カラーテーマ:</label>
+        <button onclick="setTheme('pink')" style="background:#ff69b4;">ピンク</button>
+        <button onclick="setTheme('blue')" style="background:#0284c7;">ブルー</button>
+        <button onclick="setTheme('green')" style="background:#16a34a;">グリーン</button>
+        <button onclick="setTheme('dark')" style="background:#334155;">ダーク</button>
+    </div>
 
     <div class="layout-top">
-        <!-- 1. マップ設定 -->
-        <div class="panel">
+        <!-- パネル 1 -->
+        <div class="panel" id="panel-1">
             <div>
-                <h2><span class="section-num">1.</span> マップ設定</h2>
+                <div class="panel-header">
+                    <span class="section-num">1.</span>
+                    <input type="text" class="panel-title" id="p1-name" value="マップ設定">
+                </div>
                 <div class="control-group">
                     <label>横幅(2-30)</label>
                     <input type="number" id="input-cols" value="8" min="2" max="30">
                     <label>縦幅(2-30)</label>
                     <input type="number" id="input-rows" value="8" min="2" max="30">
                     <button id="btn-apply-size">サイズを適用</button>
-                    <button id="btn-random-pos" class="btn-green" style="margin-top:5px;">S/Gをランダム配置</button>
+                    <button id="btn-random-pos" class="btn-green" style="margin-top:2px;">S/Gをランダム配置</button>
+                    
+                    <label style="margin-top:6px; font-weight:bold;">🖼️ 下に敷く画像</label>
+                    <input type="file" id="input-bg-img" accept="image/*">
                 </div>
             </div>
         </div>
 
-        <!-- 2. 操作モード・移動 -->
-        <div class="panel">
+        <!-- パネル 2 -->
+        <div class="panel" id="panel-2">
             <div>
-                <h2><span class="section-num">2.</span> 操作モード・移動</h2>
-                <select id="select-mode" style="width: 100%; margin-bottom: 10px;">
-                    <option value="move">📍 移動 (クリックでも可)</option>
-                    <option value="wall">🚧 障害物</option>
-                    <option value="start">🟢 スタート！配置</option>
-                    <option value="goal">🔴 ゴール！配置</option>
-                    <option value="text">✏️ 文字を書く</option>
-                </select>
-                
-                <div class="game-controls">
-                    <button class="d-pad-btn" onclick="movePlayer(0, -1)">←</button>
-                    <button class="d-pad-btn" onclick="movePlayer(-1, 0)">↑</button>
-                    <button class="d-pad-btn" onclick="movePlayer(0, 1)">→</button>
-                    <button class="d-pad-btn" style="grid-column: 2;" onclick="movePlayer(1, 0)">↓</button>
-                    <button class="btn-misc btn-green" onclick="undoMove()">↩️ 戻る</button>
-                    <button class="btn-misc" style="background:#ef4444;" onclick="confirmResetPlayer()">🔄 現在地リセット</button>
-                    <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
-                    <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                <div class="panel-header">
+                    <span class="section-num">2.</span>
+                    <input type="text" class="panel-title" id="p2-name" value="操作・移動">
                 </div>
+                
+                <div>
+                    <select id="select-mode" style="width: 100%; margin-bottom: 4px;">
+                        <option value="move">📍 移動 (クリックでも可)</option>
+                        <option value="reveal">👁️ マスを開く/隠す (自由選択)</option>
+                        <option value="wall">🚧 障害物</option>
+                        <option value="start">🟢 スタート！配置</option>
+                        <option value="goal">🔴 ゴール！配置</option>
+                        <option value="text">✏️ 文字を書く</option>
+                    </select>
+
+                    <label class="checkbox-label" style="margin-bottom: 8px;">
+                        <input type="checkbox" id="chk-show-text" checked onchange="renderGrid()"> 📝 マス上の文字を表示する
+                    </label>
+                    
+                    <div class="game-controls">
+                        <button class="d-pad-btn" onclick="movePlayer(0, -1)">←</button>
+                        <button class="d-pad-btn" onclick="movePlayer(-1, 0)">↑</button>
+                        <button class="d-pad-btn" onclick="movePlayer(0, 1)">→</button>
+                        <button class="d-pad-btn" style="grid-column: 2;" onclick="movePlayer(1, 0)">↓</button>
+                        <button class="btn-misc btn-green" onclick="undoMove()">↩️ 1つ戻る</button>
+                        <button class="btn-misc" style="background:#f59e0b;" onclick="resetCurrentOnly()">📍 現在地のみリセット</button>
+                        <button class="btn-misc" style="background:#ef4444;" onclick="resetStartAndSteps()">🚶 スタート＆歩数をリセット</button>
+                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()">💣 全てをリセット</button>
+                        <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
+                        <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                    </div>
+                </div>
+
                 <div class="sub-note">※下のマップをタップでも操作できるよ！</div>
             </div>
         </div>
 
-        <!-- 3. 画像保存・コピー -->
-        <div class="panel" style="text-align: center;">
+        <!-- パネル 3 -->
+        <div class="panel" id="panel-3">
             <div>
-                <h2><span class="section-num">3.</span> 保存・コピー</h2>
-                <div style="font-weight: bold; margin: 15px 0 10px 0;">👟 歩数: <span id="step-count" style="font-size: 1.2rem; color: var(--primary);">0</span></div>
+                <div class="panel-header">
+                    <span class="section-num">3.</span>
+                    <input type="text" class="panel-title" id="p3-name" value="保存・出力・復元">
+                </div>
+                <div style="font-weight: bold; text-align: center; margin: 4px 0;">
+                    👟 歩数: <span id="step-count" style="font-size: 1.1rem; color: var(--primary);">0</span>
+                </div>
+
+                <label class="checkbox-label" style="margin-bottom: 4px;">
+                    <input type="checkbox" id="chk-include-zoom" checked> 🔍 右下にコマの拡大図を含める
+                </label>
+                <label class="checkbox-label" style="margin-bottom: 6px;">
+                    <input type="checkbox" id="chk-fill-gap" onchange="renderGrid()"> 🧩 マス目の隙間を埋める
+                </label>
+
+                <div class="btn-col">
+                    <button id="btn-download" style="background: #0ea5e9;">💾 結果画像を保存 (元サイズ)</button>
+                    <button id="btn-copy" class="btn-green">📋 画像をクリップボードにコピー</button>
+                    <hr style="width:100%; border:0; border-top:1px solid var(--border-color); margin: 2px 0;">
+                    <button onclick="exportBackupData()" style="background:#8b5cf6;">📦 バックアップ保存 (JSON)</button>
+                    <button onclick="document.getElementById('input-restore-file').click()" style="background:#6366f1;">📂 バックアップから復元</button>
+                    <input type="file" id="input-restore-file" accept=".json" style="display:none;" onchange="importBackupData(event)">
+                </div>
             </div>
-            <div class="btn-col">
-                <button id="btn-download" style="background: #0ea5e9;">💾 PNG画像で保存</button>
-                <button id="btn-copy" class="btn-green">📋 クリップボードにコピー</button>
+            <div class="counter-box">
+                <span style="font-size:0.8rem; font-weight:bold; flex:1;">進捗:</span>
+                <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
+                <input type="number" id="p3-val" class="input-counter" value="0" oninput="updateTextOutput()">
+                <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
             </div>
         </div>
     </div>
 
-    <!-- マップ表示エリア（大きく配置） -->
+    <!-- 画面の半分以上を占める超特大マップ表示エリア -->
     <div class="map-container-wrapper">
-        <div id="grid-container" style="background:#ffffff; padding:10px; width: 100%; display: flex; justify-content: center;">
+        <div id="stage-wrapper" class="map-stage">
+            <canvas id="bg-canvas"></canvas>
             <div id="grid" class="grid"></div>
         </div>
+    </div>
+
+    <!-- 定型文生成パネル -->
+    <div class="text-panel">
+        <h3 style="margin-top:0; color:var(--accent);">📝 定型文自動生成 ＆ 出力</h3>
+        <div class="control-group">
+            <label>前に追加する文章 (接頭辞):</label>
+            <input type="text" id="text-prefix" value="【定期】マップ進行度" oninput="updateTextOutput()">
+            
+            <label>自動生成テキスト:</label>
+            <textarea id="text-output" rows="3" readonly></textarea>
+            
+            <label>後ろに追加する文章 (接尾辞):</label>
+            <input type="text" id="text-suffix" value=" ゴールさせてぇぇえええ泣泣" oninput="updateTextOutput()">
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="copyGeneratedText()" class="btn-green" style="flex:1;">📋 文章をコピー</button>
+            <button onclick="downloadTextAsImage()" style="background:#0ea5e9; flex:1;">🖼️ 文章結果を画像で保存</button>
+            <button onclick="copyTextAsImage()" style="background:#8b5cf6; flex:1;">📋 文章結果画像をコピー</button>
+        </div>
+    </div>
+</div>
+
+<!-- 画面下部の固定操作バー (パネル3の進捗のみ表示) -->
+<div class="fixed-bottom-bar">
+    <div class="quick-counter">
+        <span id="quick-p3-label">パネル3</span>:
+        <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
+        <span id="quick-p3-val">0</span>
+        <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
     </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
     let cols = 8, rows = 8;
-    let gridData = [], textData = [];
+    let gridData = [], textData = [], revealedGrid = [];
     let startPos = { r: 0, c: 0 }, goalPos = { r: 7, c: 7 }, currentPos = { r: 0, c: 0 };
     let moveHistory = []; 
     let stepCount = 0;
-    let playerIconSrc = null; // カスタムコマ画像用データ
+    let playerIconSrc = null;
+    let bgImageSrc = null;
+    let bgImage = null; 
 
     const gridEl = document.getElementById('grid');
     const stepCountEl = document.getElementById('step-count');
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
 
     function showToast(msg) {
         const t = document.getElementById('toast');
@@ -158,27 +305,52 @@
         setTimeout(() => t.classList.remove('show'), 2000);
     }
 
+    function setTheme(theme) {
+        document.body.className = theme === 'pink' ? '' : 'theme-' + theme;
+    }
+
     function initMap() {
         cols = parseInt(document.getElementById('input-cols').value) || 8;
         rows = parseInt(document.getElementById('input-rows').value) || 8;
         gridData = Array(rows).fill(0).map(() => Array(cols).fill(0));
         textData = Array(rows).fill("").map(() => Array(cols).fill(""));
+        revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
         startPos = { r: 0, c: 0 }; goalPos = { r: rows - 1, c: cols - 1 };
-        resetPlayer();
+        resetStartAndSteps(true);
     }
 
-    function resetPlayer() {
-        currentPos = { ...startPos };
-        moveHistory = [];
-        stepCount = 0;
-        renderGrid();
+    /* リセット機能群 */
+    function resetCurrentOnly() {
+        if (confirm("現在地と移動履歴をリセットしますか？")) {
+            moveHistory = [];
+            revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
+            revealedGrid[currentPos.r][currentPos.c] = true;
+            renderGrid();
+            showToast("現在地のみリセットしました！");
+        }
     }
 
-    // リセット前の確認メッセージ処理
-    function confirmResetPlayer() {
-        if (confirm("本当にリセットしますか？")) {
-            resetPlayer();
-            showToast("現在地をリセットしました！");
+    function resetStartAndSteps(skipConfirm = false) {
+        if (skipConfirm || confirm("コマをスタートに戻して歩数をリセットしますか？")) {
+            currentPos = { ...startPos };
+            moveHistory = [];
+            stepCount = 0;
+            revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
+            revealedGrid[startPos.r][startPos.c] = true;
+            renderGrid();
+            if(!skipConfirm) showToast("スタート＆歩数をリセットしました！");
+        }
+    }
+
+    function resetAll() {
+        if (confirm("【警告】画像や壁の設定も含めて全て初期化しますか？")) {
+            bgImage = null;
+            bgImageSrc = null;
+            playerIconSrc = null;
+            document.getElementById('input-bg-img').value = '';
+            document.getElementById('input-player-img').value = '';
+            initMap();
+            showToast("全てのリセットが完了しました！");
         }
     }
 
@@ -188,16 +360,23 @@
         if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && gridData[nr][nc] !== 1) {
             moveHistory.push({ ...currentPos });
             currentPos = { r: nr, c: nc };
+            revealedGrid[nr][nc] = true;
             stepCount++;
             renderGrid();
         }
     }
 
+    /* 誤操作対策付き 1つ戻る */
     function undoMove() {
-        if (moveHistory.length > 0) {
+        if (moveHistory.length === 0) {
+            showToast("これ以上戻れません");
+            return;
+        }
+        if (confirm("ひとつ前に戻しますか？（操作ミス防止の確認）")) {
             currentPos = moveHistory.pop();
             stepCount = Math.max(0, stepCount - 1);
             renderGrid();
+            showToast("ひとつ前に戻りました");
         }
     }
 
@@ -214,13 +393,62 @@
         }
     }
 
+    // 背景画像のアップロード
+    document.getElementById('input-bg-img').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                bgImageSrc = evt.target.result;
+                bgImage = new Image();
+                bgImage.onload = function() {
+                    resizeCanvases();
+                    renderGrid();
+                    showToast("背景画像を設定しました！");
+                };
+                bgImage.src = bgImageSrc;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function resizeCanvases() {
+        const rect = gridEl.getBoundingClientRect();
+        bgCanvas.width = rect.width;
+        bgCanvas.height = rect.height;
+        drawBgCanvas();
+    }
+
+    function drawBgCanvas() {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        if (bgImage) {
+            bgCtx.drawImage(bgImage, 0, 0, bgCanvas.width, bgCanvas.height);
+        }
+    }
+
     function renderGrid() {
+        const showText = document.getElementById('chk-show-text').checked;
+        const fillGap = document.getElementById('chk-fill-gap').checked;
+
+        if (fillGap) {
+            gridEl.classList.add('no-gap');
+        } else {
+            gridEl.classList.remove('no-gap');
+        }
+
         gridEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        gridEl.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
         gridEl.innerHTML = '';
+        
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                
+                if (bgImage && revealedGrid[r] && revealedGrid[r][c]) {
+                    cell.classList.add('revealed');
+                }
+
                 if (gridData[r][c] === 1) cell.classList.add('wall');
                 if (r === startPos.r && c === startPos.c) { cell.classList.add('start'); cell.innerHTML = '<span class="badge">スタート！</span>'; }
                 if (r === goalPos.r && c === goalPos.c) { cell.classList.add('goal'); cell.innerHTML = '<span class="badge">ゴール！</span>'; }
@@ -232,13 +460,18 @@
                         cell.innerHTML += '📍';
                     }
                 }
-                if (textData[r][c]) cell.innerHTML += textData[r][c];
+                
+                if (showText && textData[r][c]) {
+                    cell.innerHTML += `<span class="cell-text">${textData[r][c]}</span>`;
+                }
 
                 cell.onclick = () => handleCellClick(r, c);
                 gridEl.appendChild(cell);
             }
         }
         stepCountEl.textContent = stepCount;
+        updateTextOutput();
+        setTimeout(resizeCanvases, 10);
     }
 
     function handleCellClick(r, c) {
@@ -247,14 +480,20 @@
             if (gridData[r][c] === 1) return;
             moveHistory.push({ ...currentPos });
             currentPos = { r, c };
+            revealedGrid[r][c] = true;
             stepCount++;
+        } else if (mode === 'reveal') {
+            revealedGrid[r][c] = !revealedGrid[r][c];
         } else if (mode === 'wall') {
             if ((r === startPos.r && c === startPos.c) || (r === goalPos.r && c === goalPos.c)) return;
             gridData[r][c] = gridData[r][c] === 1 ? 0 : 1;
         } else if (mode === 'start') {
             if (r === goalPos.r && c === goalPos.c) return;
             startPos = { r, c };
-            if (moveHistory.length === 0) currentPos = { r, c };
+            if (moveHistory.length === 0) {
+                currentPos = { r, c };
+                revealedGrid[r][c] = true;
+            }
         } else if (mode === 'goal') {
             if (r === startPos.r && c === startPos.c) return;
             goalPos = { r, c };
@@ -266,55 +505,372 @@
         renderGrid();
     }
 
+    /* パネル進捗(+/-)ボタン機能 */
+    function changeCount(panelId, delta) {
+        const input = document.getElementById(`${panelId}-val`);
+        let val = parseInt(input.value) || 0;
+        val += delta;
+        input.value = val;
+        updateTextOutput();
+    }
+
+    /* リアルタイム定型文更新処理 */
+    function updateTextOutput() {
+        const p1Name = document.getElementById('p1-name').value;
+        const p1Val = document.getElementById('p1-val').value;
+        const p2Name = document.getElementById('p2-name').value;
+        const p2Val = document.getElementById('p2-val').value;
+        const p3Name = document.getElementById('p3-name').value;
+        const p3Val = document.getElementById('p3-val').value;
+
+        document.getElementById('quick-p3-label').textContent = p3Name;
+        document.getElementById('quick-p3-val').textContent = p3Val;
+
+        let totalWalkable = 0;
+        let revealedCount = 0;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (gridData[r] && gridData[r][c] !== 1) {
+                    totalWalkable++;
+                    if (revealedGrid[r] && revealedGrid[r][c]) {
+                        revealedCount++;
+                    }
+                }
+            }
+        }
+        const progressPercent = totalWalkable > 0 ? Math.round((revealedCount / totalWalkable) * 100) : 0;
+
+        const prefix = document.getElementById('text-prefix').value;
+        const suffix = document.getElementById('text-suffix').value;
+        
+        const generated = `${prefix}${progressPercent}% 現在${stepCount}歩 (${p1Name}${p1Val}/${p2Name}${p2Val}/${p3Name}${p3Val})${suffix}`;
+
+        document.getElementById('text-output').value = generated;
+    }
+
+    ['p1-name', 'p2-name', 'p3-name'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateTextOutput);
+    });
+
     document.getElementById('btn-apply-size').onclick = () => { initMap(); showToast("サイズ変更しました！"); };
     document.getElementById('btn-random-pos').onclick = () => {
         startPos = { r: Math.floor(Math.random()*rows), c: Math.floor(Math.random()*cols) };
         goalPos = { r: Math.floor(Math.random()*rows), c: Math.floor(Math.random()*cols) };
-        resetPlayer();
+        resetStartAndSteps(true);
         showToast("S/Gをランダム配置しました！");
     };
 
-    // 画像キャプチャ処理
-    function captureMap(callback) {
-        const target = document.getElementById('grid-container');
-        html2canvas(target, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
-            callback(canvas);
-        }).catch(() => showToast("画像の生成に失敗しました"));
+    /* バックアップ保存（JSON） ＆ 復元機能 */
+    function exportBackupData() {
+        const backupObj = {
+            cols, rows, gridData, textData, revealedGrid,
+            startPos, goalPos, currentPos, moveHistory, stepCount,
+            p1Name: document.getElementById('p1-name').value,
+            p1Val: document.getElementById('p1-val').value,
+            p2Name: document.getElementById('p2-name').value,
+            p2Val: document.getElementById('p2-val').value,
+            p3Name: document.getElementById('p3-name').value,
+            p3Val: document.getElementById('p3-val').value,
+            prefix: document.getElementById('text-prefix').value,
+            suffix: document.getElementById('text-suffix').value,
+            playerIconSrc, bgImageSrc
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `map_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast("バックアップファイルを保存しました！");
     }
 
-    // PNG保存
+    function importBackupData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = JSON.parse(evt.target.result);
+                cols = data.cols; rows = data.rows;
+                document.getElementById('input-cols').value = cols;
+                document.getElementById('input-rows').value = rows;
+                gridData = data.gridData;
+                textData = data.textData;
+                revealedGrid = data.revealedGrid;
+                startPos = data.startPos;
+                goalPos = data.goalPos;
+                currentPos = data.currentPos;
+                moveHistory = data.moveHistory;
+                stepCount = data.stepCount;
+
+                document.getElementById('p1-name').value = data.p1Name || "マップ設定";
+                document.getElementById('p1-val').value = data.p1Val || 0;
+                document.getElementById('p2-name').value = data.p2Name || "操作・移動";
+                document.getElementById('p2-val').value = data.p2Val || 0;
+                document.getElementById('p3-name').value = data.p3Name || "保存・出力";
+                document.getElementById('p3-val').value = data.p3Val || 0;
+                document.getElementById('text-prefix').value = data.prefix || "【定期】マップ進行度";
+                document.getElementById('text-suffix').value = data.suffix || " ゴールさせてぇぇえええ泣泣";
+
+                playerIconSrc = data.playerIconSrc || null;
+                bgImageSrc = data.bgImageSrc || null;
+
+                if (bgImageSrc) {
+                    bgImage = new Image();
+                    bgImage.onload = function() {
+                        renderGrid();
+                    };
+                    bgImage.src = bgImageSrc;
+                } else {
+                    bgImage = null;
+                    renderGrid();
+                }
+                showToast("データを復元しました！");
+            } catch (err) {
+                alert("バックアップファイルの読み込みに失敗しました。");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    /* 高解像度合成処理 ＆ 右下拡大表示合成 */
+    function generateFullResolutionCanvas(callback) {
+        const stage = document.getElementById('stage-wrapper');
+        const stageRect = stage.getBoundingClientRect();
+        const showText = document.getElementById('chk-show-text').checked;
+        const includeZoom = document.getElementById('chk-include-zoom').checked;
+        const fillGap = document.getElementById('chk-fill-gap').checked;
+
+        let targetW = stageRect.width;
+        let targetH = stageRect.height;
+
+        if (bgImage) {
+            targetW = bgImage.naturalWidth;
+            targetH = bgImage.naturalHeight;
+        }
+
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = targetW;
+        outCanvas.height = targetH;
+        const ctx = outCanvas.getContext('2d');
+
+        function drawMapBase(targetCtx, w, h) {
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.fillRect(0, 0, w, h);
+
+            const cellW = w / cols;
+            const cellH = h / rows;
+
+            if (bgImage) {
+                const maskCanvas = document.createElement('canvas');
+                maskCanvas.width = w;
+                maskCanvas.height = h;
+                const maskCtx = maskCanvas.getContext('2d');
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (revealedGrid[r] && revealedGrid[r][c]) {
+                            maskCtx.fillStyle = '#000';
+                            maskCtx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                        }
+                    }
+                }
+
+                const bgPatternCanvas = document.createElement('canvas');
+                bgPatternCanvas.width = w;
+                bgPatternCanvas.height = h;
+                const pCtx = bgPatternCanvas.getContext('2d');
+                pCtx.drawImage(bgImage, 0, 0, w, h);
+                pCtx.globalCompositeOperation = 'destination-in';
+                pCtx.drawImage(maskCanvas, 0, 0);
+
+                targetCtx.drawImage(bgPatternCanvas, 0, 0);
+            }
+
+            if (!fillGap) {
+                targetCtx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
+                targetCtx.lineWidth = 2;
+            }
+            targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = 'middle';
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = c * cellW;
+                    const y = r * cellH;
+
+                    if (!fillGap) {
+                        targetCtx.strokeRect(x, y, cellW, cellH);
+                    }
+
+                    if (gridData[r][c] === 1) {
+                        targetCtx.fillStyle = 'rgba(150, 150, 150, 0.8)';
+                        targetCtx.fillRect(x, y, cellW, cellH);
+                    }
+                    if (r === startPos.r && c === startPos.c) {
+                        targetCtx.fillStyle = 'rgba(50, 205, 50, 0.7)';
+                        targetCtx.fillRect(x, y, cellW, cellH);
+                        targetCtx.fillStyle = '#fff';
+                        targetCtx.fillText('S', x + cellW / 2, y + cellH / 2);
+                    }
+                    if (r === goalPos.r && c === goalPos.c) {
+                        targetCtx.fillStyle = 'rgba(255, 69, 0, 0.7)';
+                        targetCtx.fillRect(x, y, cellW, cellH);
+                        targetCtx.fillStyle = '#fff';
+                        targetCtx.fillText('G', x + cellW / 2, y + cellH / 2);
+                    }
+                    if (r === currentPos.r && c === currentPos.c) {
+                        targetCtx.fillText('📍', x + cellW / 2, y + cellH / 2);
+                    }
+                    if (showText && textData[r][c]) {
+                        targetCtx.fillStyle = '#000';
+                        targetCtx.fillText(textData[r][c], x + cellW / 2, y + cellH / 2);
+                    }
+                }
+            }
+        }
+
+        drawMapBase(ctx, targetW, targetH);
+
+        if (includeZoom) {
+            const cellW = targetW / cols;
+            const cellH = targetH / rows;
+
+            const srcX = Math.max(0, (currentPos.c - 1) * cellW);
+            const srcY = Math.max(0, (currentPos.r - 1) * cellH);
+            const srcW = Math.min(targetW - srcX, cellW * 3);
+            const srcH = Math.min(targetH - srcY, cellH * 3);
+
+            const zoomBoxW = targetW * 0.35;
+            const zoomBoxH = (srcH / srcW) * zoomBoxW;
+            const zoomBoxX = targetW - zoomBoxW - (targetW * 0.02);
+            const zoomBoxY = targetH - zoomBoxH - (targetH * 0.02);
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(zoomBoxX - 4, zoomBoxY - 4, zoomBoxW + 8, zoomBoxH + 8);
+            ctx.restore();
+
+            ctx.drawImage(outCanvas, srcX, srcY, srcW, srcH, zoomBoxX, zoomBoxY, zoomBoxW, zoomBoxH);
+
+            ctx.strokeStyle = '#ff1493';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(zoomBoxX, zoomBoxY, zoomBoxW, zoomBoxH);
+
+            const startX = (currentPos.c + 0.5) * cellW;
+            const startY = (currentPos.r + 0.5) * cellH;
+            const endX = zoomBoxX;
+            const endY = zoomBoxY + (zoomBoxH / 2);
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#ff1493';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            const angle = Math.atan2(endY - startY, endX - startX);
+            const arrowHeadLen = 15;
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - arrowHeadLen * Math.cos(angle - Math.PI / 6), endY - arrowHeadLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(endX - arrowHeadLen * Math.cos(angle + Math.PI / 6), endY - arrowHeadLen * Math.sin(angle + Math.PI / 6));
+            ctx.fillStyle = '#ff1493';
+            ctx.fill();
+        }
+
+        callback(outCanvas);
+    }
+
     document.getElementById('btn-download').onclick = () => {
-        showToast("画像を生成中...");
-        captureMap(canvas => {
+        showToast("高解像度画像を生成中...");
+        generateFullResolutionCanvas(canvas => {
             const a = document.createElement('a');
-            a.download = 'grid-map.png';
+            a.download = 'map-result.png';
             a.href = canvas.toDataURL('image/png');
             a.click();
             showToast("画像を保存しました！");
         });
     };
 
-    // クリップボードへコピー
     document.getElementById('btn-copy').onclick = () => {
         if (!navigator.clipboard || !window.ClipboardItem) {
-            showToast("お使いの環境ではコピーに対応していません");
+            showToast("お使いのブラウザは直接コピー非対応です");
             return;
         }
         showToast("画像を生成中...");
-        captureMap(canvas => {
+        generateFullResolutionCanvas(canvas => {
             canvas.toBlob(blob => {
                 try {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
                         showToast("クリップボードにコピーしました！");
-                    }).catch(() => showToast("コピーに失敗しました"));
+                    });
                 } catch (e) {
-                    showToast("コピーが制限されています");
+                    showToast("コピーが拒否されました");
                 }
             });
         });
     };
 
+    function copyGeneratedText() {
+        const text = document.getElementById('text-output').value;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("文章をコピーしました！");
+        });
+    }
+
+    function createTextCanvas() {
+        const text = document.getElementById('text-output').value;
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#ff69b4';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#333333';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 40);
+        return canvas;
+    }
+
+    function downloadTextAsImage() {
+        const canvas = createTextCanvas();
+        const a = document.createElement('a');
+        a.download = 'text-result.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        showToast("文章画像を保存しました！");
+    }
+
+    function copyTextAsImage() {
+        if (!navigator.clipboard || !window.ClipboardItem) {
+            showToast("お使いのブラウザは直接コピー非対応です");
+            return;
+        }
+        const canvas = createTextCanvas();
+        canvas.toBlob(blob => {
+            const item = new ClipboardItem({ 'image/png': blob });
+            navigator.clipboard.write([item]).then(() => {
+                showToast("文章画像をコピーしました！");
+            });
+        });
+    }
+
+    window.onresize = resizeCanvases;
     initMap();
 </script>
 </body>
