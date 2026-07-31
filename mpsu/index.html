@@ -20,7 +20,6 @@
             --green-btn-hover: #059669;
         }
 
-        /* カラーテーマ設定 */
         body.theme-blue {
             --bg-color: #e0f2fe; --panel-bg: #ffffff; --text-color: #1e293b;
             --border-color: #bae6fd; --primary: #0284c7; --primary-hover: #0369a1;
@@ -43,7 +42,6 @@
         
         .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; align-items: center; }
 
-        /* パネルレイアウト (常に横並び3列を維持) */
         .layout-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
 
         .panel { background: var(--panel-bg); padding: 12px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
@@ -59,12 +57,10 @@
         button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background-color: var(--primary-hover); }
         
-        /* 数値進捗コントロール */
         .counter-box { display: flex; align-items: center; gap: 5px; margin-top: 8px; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 8px; }
         .btn-step { width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; user-select: none; flex-shrink: 0; }
         .input-counter { width: 100%; max-width: 50px; text-align: center; font-weight: bold; }
 
-        /* 操作系 */
         .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 240px; margin: 0 auto 8px auto; }
         .d-pad-btn { background: var(--border-color); color: var(--text-color); }
         .d-pad-btn:hover { background: var(--primary); color: white; }
@@ -75,21 +71,11 @@
 
         .sub-note { font-size: 0.75rem; opacity: 0.7; text-align: center; margin-top: 4px; font-weight: bold; }
 
-        /* マップ表示エリア */
         .map-container-wrapper { 
-            width: 100%; 
-            height: 60vh; 
-            min-height: 500px;
-            overflow: auto; 
-            border: 3px solid var(--border-color); 
-            border-radius: 16px; 
-            background: #ffffff; 
-            padding: 20px; 
-            box-sizing: border-box; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            position: relative; 
+            width: 100%; height: 60vh; min-height: 500px;
+            overflow: auto; border: 3px solid var(--border-color); border-radius: 16px; 
+            background: #ffffff; padding: 20px; box-sizing: border-box; 
+            display: flex; justify-content: center; align-items: center; position: relative; 
             box-shadow: inset 0 0 15px rgba(0,0,0,0.03);
         }
         .map-stage { position: relative; display: inline-block; width: 100%; height: 100%; max-width: 1200px; display: flex; justify-content: center; align-items: center; }
@@ -97,50 +83,22 @@
         .grid { display: grid; gap: 6px; background: rgba(0,0,0,0.05); border: 4px solid var(--border-color); border-radius: 12px; width: 100%; height: 100%; max-height: 100%; position: relative; z-index: 2; padding: 6px; box-sizing: border-box; }
         .grid.no-gap { gap: 0px; padding: 0px; }
         
-        .cell { 
-            background: #ffffff; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            position: relative; 
-            color: #333; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            overflow: hidden;
-        }
+        .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border-radius: 6px; position: relative; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
         .grid.no-gap .cell { border-radius: 0px; box-shadow: none; }
         
         .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
         .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
         .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
-        
         .cell.revealed { background: transparent !important; box-shadow: none; }
 
         .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
         .player-icon { width: 80%; height: 80%; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
         
-        .cell-text { 
-            pointer-events: none; 
-            z-index: 2; 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            padding: 2px; 
-            box-sizing: border-box;
-            word-break: break-all;
-            font-size: clamp(0.5rem, 1.8vw, 1.2rem); 
-            line-height: 1.1;
-        }
+        .cell-text { pointer-events: none; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2px; box-sizing: border-box; word-break: break-all; font-size: clamp(0.5rem, 1.8vw, 1.2rem); line-height: 1.1; }
 
         #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
 
         .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px; }
-
         .text-panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); margin-top: 15px; }
 
         .fixed-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel-bg); border-top: 2px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 999; flex-wrap: wrap; }
@@ -151,6 +109,9 @@
 
         .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
         .checkbox-label input { cursor: pointer; }
+
+        /* バックアップ用モーダル/ボックスのスタイル */
+        .backup-box { background: rgba(0,0,0,0.02); border: 2px dashed var(--border-color); padding: 10px; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -248,10 +209,15 @@
                 <div class="btn-col">
                     <button id="btn-download" style="background: #0ea5e9;">💾 結果画像を保存 (元サイズ)</button>
                     <button id="btn-copy" class="btn-green">📋 画像をクリップボードにコピー</button>
-                    <hr style="width:100%; border:0; border-top:1px solid var(--border-color); margin: 2px 0;">
-                    <button onclick="exportBackupData()" style="background:#8b5cf6;">📦 バックアップ保存 (JSON)</button>
-                    <button onclick="document.getElementById('input-restore-file').click()" style="background:#6366f1;">📂 バックアップから復元</button>
-                    <input type="file" id="input-restore-file" accept=".json,.txt" style="display:none;" onchange="importBackupData(event)">
+                    
+                    <div class="backup-box">
+                        <button onclick="exportBackupText()" style="background:#8b5cf6; width:100%; margin-bottom:4px;">📦 バックアップ文字列を作成</button>
+                        <textarea id="backup-text-area" rows="3" placeholder="ここにバックアップデータが出力されます" style="width:100%; font-size:0.75rem; font-family:monospace;"></textarea>
+                        <div style="display:flex; gap:4px; margin-top:4px;">
+                            <button onclick="copyBackupText()" style="background:#6366f1; flex:1; font-size:0.75rem; padding:4px;">📋 枠内をコピー</button>
+                            <button onclick="importBackupText()" style="background:#10b981; flex:1; font-size:0.75rem; padding:4px;">📂 枠内から復元</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="counter-box">
@@ -580,9 +546,9 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    /* --- 修正版：確実なバックアップ保存と復元 --- */
-    function exportBackupData() {
-        const backupObj = {
+    /* --- テキストベースの確実なバックアップ保存・復元 --- */
+    function getBackupDataObject() {
+        return {
             cols, rows, gridData, textData, revealedGrid,
             startPos, goalPos, currentPos, moveHistory, stepCount,
             p1Name: document.getElementById('p1-name').value,
@@ -595,82 +561,87 @@
             suffix: document.getElementById('text-suffix').value,
             playerIconSrc, bgImageSrc
         };
+    }
 
+    function exportBackupText() {
         try {
-            const jsonString = JSON.stringify(backupObj, null, 2);
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `sugoroku_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast("バックアップファイルを保存しました！");
+            const dataObj = getBackupDataObject();
+            const jsonStr = JSON.stringify(dataObj);
+            document.getElementById('backup-text-area').value = jsonStr;
+            showToast("バックアップ文字列を作成しました！");
         } catch (err) {
             console.error(err);
-            alert("保存に失敗しました: " + err.message);
+            alert("作成失敗: " + err.message);
         }
     }
 
-    function importBackupData(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    function copyBackupText() {
+        const area = document.getElementById('backup-text-area');
+        if (!area.value) {
+            exportBackupText();
+        }
+        area.select();
+        navigator.clipboard.writeText(area.value).then(() => {
+            showToast("バックアップ文字列をコピーしました！");
+        }).catch(() => {
+            alert("コピーに失敗しました。手動で選択してコピーしてください。");
+        });
+    }
 
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            try {
-                const data = JSON.parse(evt.target.result);
-                
-                cols = data.cols || 8;
-                rows = data.rows || 8;
-                document.getElementById('input-cols').value = cols;
-                document.getElementById('input-rows').value = rows;
-                
-                gridData = data.gridData || Array(rows).fill(0).map(() => Array(cols).fill(0));
-                textData = data.textData || Array(rows).fill("").map(() => Array(cols).fill(""));
-                revealedGrid = data.revealedGrid || Array(rows).fill(false).map(() => Array(cols).fill(false));
-                
-                startPos = data.startPos || { r: rows - 1, c: cols - 1 };
-                goalPos = data.goalPos || { r: 0, c: 0 };
-                currentPos = data.currentPos || { ...startPos };
-                moveHistory = data.moveHistory || [];
-                stepCount = data.stepCount || 0;
+    function importBackupText() {
+        const area = document.getElementById('backup-text-area');
+        const jsonStr = area.value.trim();
+        if (!jsonStr) {
+            alert("下の枠内にバックアップ文字列を貼り付けてから復元を押してください。");
+            return;
+        }
 
-                document.getElementById('p1-name').value = data.p1Name || "マップ設定";
-                document.getElementById('p1-val').value = data.p1Val || 0;
-                document.getElementById('p2-name').value = data.p2Name || "操作・移動";
-                document.getElementById('p2-val').value = data.p2Val || 0;
-                document.getElementById('p3-name').value = data.p3Name || "保存・出力";
-                document.getElementById('p3-val').value = data.p3Val || 0;
-                document.getElementById('text-prefix').value = data.prefix || "【定期】マップ進行度";
-                document.getElementById('text-suffix').value = data.suffix || " ゴールさせてぇぇえええ泣泣";
+        try {
+            const data = JSON.parse(jsonStr);
+            
+            cols = data.cols || 8;
+            rows = data.rows || 8;
+            document.getElementById('input-cols').value = cols;
+            document.getElementById('input-rows').value = rows;
+            
+            gridData = data.gridData || Array(rows).fill(0).map(() => Array(cols).fill(0));
+            textData = data.textData || Array(rows).fill("").map(() => Array(cols).fill(""));
+            revealedGrid = data.revealedGrid || Array(rows).fill(false).map(() => Array(cols).fill(false));
+            
+            startPos = data.startPos || { r: rows - 1, c: cols - 1 };
+            goalPos = data.goalPos || { r: 0, c: 0 };
+            currentPos = data.currentPos || { ...startPos };
+            moveHistory = data.moveHistory || [];
+            stepCount = data.stepCount || 0;
 
-                playerIconSrc = data.playerIconSrc || null;
-                bgImageSrc = data.bgImageSrc || null;
+            document.getElementById('p1-name').value = data.p1Name || "マップ設定";
+            document.getElementById('p1-val').value = data.p1Val || 0;
+            document.getElementById('p2-name').value = data.p2Name || "操作・移動";
+            document.getElementById('p2-val').value = data.p2Val || 0;
+            document.getElementById('p3-name').value = data.p3Name || "保存・出力";
+            document.getElementById('p3-val').value = data.p3Val || 0;
+            document.getElementById('text-prefix').value = data.prefix || "【定期】マップ進行度";
+            document.getElementById('text-suffix').value = data.suffix || " ゴールさせてぇぇえええ泣泣";
 
-                if (bgImageSrc) {
-                    bgImage = new Image();
-                    bgImage.onload = function() {
-                        renderGrid();
-                        showToast("バックアップから復元しました！");
-                    };
-                    bgImage.src = bgImageSrc;
-                } else {
-                    bgImage = null;
+            playerIconSrc = data.playerIconSrc || null;
+            bgImageSrc = data.bgImageSrc || null;
+
+            if (bgImageSrc) {
+                bgImage = new Image();
+                bgImage.onload = function() {
                     renderGrid();
                     showToast("バックアップから復元しました！");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("バックアップファイルの形式が正しくないか、読み込みに失敗しました。");
-            } finally {
-                // 同じファイルを再度選択できるようにリセット
-                e.target.value = '';
+                };
+                bgImage.src = bgImageSrc;
+            } else {
+                bgImage = null;
+                renderGrid();
+                showToast("バックアップから復元しました！");
             }
-        };
-        reader.readAsText(file);
+        } catch (err) {
+            console.error(err);
+            alert("文字列の形式が正しくないか、データが壊れています。");
+        }
     }
     /* ---------------------------------------------------- */
 
@@ -841,7 +812,7 @@
             a.download = 'map-result.png';
             a.href = canvas.toDataURL('image/png');
             a.click();
-            showToast("画像を保存しました！");
+            showToast("画像を保存するよ！");
         });
     };
 
@@ -856,7 +827,7 @@
                 try {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
-                        showToast("クリップボードにコピーしました！");
+                        showToast("クリップボードにコピーしたよ！");
                     });
                 } catch (e) {
                     showToast("コピーが拒否されました");
@@ -868,7 +839,7 @@
     function copyGeneratedText() {
         const text = document.getElementById('text-output').value;
         navigator.clipboard.writeText(text).then(() => {
-            showToast("文章をコピーしました！");
+            showToast("文章をコピーしたよ！");
         });
     }
 
@@ -901,7 +872,7 @@
         a.download = 'text-result.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
-        showToast("文章画像を保存しました！");
+        showToast("文章画像を保存したよ！");
     }
 
     function copyTextAsImage() {
@@ -913,7 +884,7 @@
         canvas.toBlob(blob => {
             const item = new ClipboardItem({ 'image/png': blob });
             navigator.clipboard.write([item]).then(() => {
-                showToast("文章画像をコピーしました！");
+                showToast("文章画像をコピーしたよ！");
             });
         });
     }
