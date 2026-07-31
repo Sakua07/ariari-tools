@@ -1,124 +1,142 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌸 マップすごろく ＆ 進捗ツール 🌸</title>
-  <style>
-    :root {
-      --bg-color: #fff0f5;
-      --panel-bg: #ffffff;
-      --text-color: #4a4a4a;
-      --border-color: #ffc0cb;
-      --primary: #e91e63;
-      --primary-hover: #c2185b;
-      --accent: #e91e63;
-      --accent-start: #32cd32;
-      --accent-goal: #ff4500;
-      --cell-wall: #ccb0b0;
-      --green-btn: #10b981;
-      --green-btn-hover: #059669;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拡張版 マップすごろくツール</title>
+    <style>
+        :root {
+            --bg-color: #fff0f5;
+            --panel-bg: #ffffff;
+            --text-color: #4a4a4a;
+            --border-color: #ffc0cb;
+            --primary: #ff69b4;
+            --primary-hover: #ff1493;
+            --accent: #db7093;
+            --accent-start: #32cd32;
+            --accent-goal: #ff4500;
+            --cell-wall: #ccb0b0;
+            --green-btn: #10b981;
+            --green-btn-hover: #059669;
+        }
 
-    body.theme-blue {
-      --bg-color: #e0f2fe; --panel-bg: #ffffff; --text-color: #1e293b;
-      --border-color: #bae6fd; --primary: #0284c7; --primary-hover: #0369a1;
-      --accent: #0284c7; --cell-wall: #94a3b8;
-    }
-    body.theme-green {
-      --bg-color: #f0fdf4; --panel-bg: #ffffff; --text-color: #14532d;
-      --border-color: #bbf7d0; --primary: #16a34a; --primary-hover: #15803d;
-      --accent: #16a34a; --cell-wall: #86efac;
-    }
-    body.theme-dark {
-      --bg-color: #0f172a; --panel-bg: #1e293b; --text-color: #f8fafc;
-      --border-color: #334155; --primary: #38bdf8; --primary-hover: #0284c7;
-      --accent: #38bdf8; --cell-wall: #475569;
-    }
+        /* カラーテーマ設定 */
+        body.theme-blue {
+            --bg-color: #e0f2fe; --panel-bg: #ffffff; --text-color: #1e293b;
+            --border-color: #bae6fd; --primary: #0284c7; --primary-hover: #0369a1;
+            --accent: #0369a1; --cell-wall: #94a3b8;
+        }
+        body.theme-green {
+            --bg-color: #f0fdf4; --panel-bg: #ffffff; --text-color: #14532d;
+            --border-color: #bbf7d0; --primary: #16a34a; --primary-hover: #15803d;
+            --accent: #15803d; --cell-wall: #86efac;
+        }
+        body.theme-dark {
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-color: #f8fafc;
+            --border-color: #334155; --primary: #38bdf8; --primary-hover: #0284c7;
+            --accent: #38bdf8; --cell-wall: #475569;
+        }
 
-    body {
-      font-family: sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0; padding: 15px;
-      display: flex; flex-direction: column; align-items: center;
-      transition: background-color 0.3s, color 0.3s;
-      min-height: 100vh; box-sizing: border-box;
-      position: relative;
-    }
-    .container { width: 100%; max-width: 1400px; padding-bottom: 40px; }
-    h1 { color: var(--accent); margin-bottom: 15px; font-size: 1.4rem; text-align: center; }
-    
-    .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; align-items: center; }
-    .theme-selector button { padding: 5px 12px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; }
+        body { font-family: sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s, color 0.3s; }
+        .container { width: 100%; max-width: 1400px; padding-bottom: 120px; }
+        h1 { font-size: 1.4rem; text-align: center; color: var(--accent); margin-bottom: 15px; }
+        
+        .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; align-items: center; }
 
-    .layout-top { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        /* パネルレイアウト (常に横並び3列を維持) */
+        .layout-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
 
-    .panel { background: var(--panel-bg); padding: 12px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-    
-    .panel-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; }
-    .panel-title { font-size: 0.95rem; font-weight: bold; color: var(--accent); border: none; background: transparent; width: 100%; outline: none; }
-    .panel-title:focus { background: rgba(0,0,0,0.05); }
+        .panel { background: var(--panel-bg); padding: 12px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+        
+        .panel-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; }
+        .panel-title { font-size: 0.95rem; font-weight: bold; color: var(--accent); border: none; background: transparent; width: 100%; outline: none; }
+        .panel-title:focus { background: rgba(0,0,0,0.05); }
 
-    .section-num { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-right: 4px; }
+        .section-num { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-right: 4px; }
 
-    .control-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    input, select, button, textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--panel-bg); color: var(--text-color); box-sizing: border-box; }
-    button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    button:hover { background-color: var(--primary-hover); }
+        .control-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+        input, select, button, textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--panel-bg); color: var(--text-color); box-sizing: border-box; }
+        button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background-color: var(--primary-hover); }
+        
+        /* 数値進捗コントロール */
+        .counter-box { display: flex; align-items: center; gap: 5px; margin-top: 8px; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 8px; }
+        .btn-step { width: 36px; height: 36px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 0; user-select: none; flex-shrink: 0; }
+        .input-counter { width: 100%; max-width: 50px; text-align: center; font-weight: bold; }
 
-    .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 240px; margin: 0 auto 8px auto; }
-    .d-pad-btn { background: var(--border-color); color: var(--text-color); }
-    .d-pad-btn:hover { background: var(--primary); color: white; }
-    
-    .btn-green { background: var(--green-btn); color: white; }
-    .btn-green:hover { background: var(--green-btn-hover); }
-    .btn-misc { grid-column: span 3; font-size: 0.8rem; padding: 6px; }
+        /* 操作系 */
+        .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 240px; margin: 0 auto 8px auto; }
+        .d-pad-btn { background: var(--border-color); color: var(--text-color); }
+        .d-pad-btn:hover { background: var(--primary); color: white; }
+        
+        .btn-green { background: var(--green-btn); color: white; }
+        .btn-green:hover { background: var(--green-btn-hover); }
+        .btn-misc { grid-column: span 3; font-size: 0.8rem; padding: 6px; }
 
-    .sub-note { font-size: 0.75rem; opacity: 0.7; text-align: center; margin-top: 4px; font-weight: bold; }
+        .sub-note { font-size: 0.75rem; opacity: 0.7; text-align: center; margin-top: 4px; font-weight: bold; }
 
-    .map-container-wrapper { 
-        width: 100%; height: 60vh; min-height: 500px;
-        overflow: auto; border: 3px solid var(--border-color); border-radius: 16px; 
-        background: #ffffff; padding: 20px; box-sizing: border-box; 
-        display: flex; justify-content: center; align-items: center; position: relative; 
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.03);
-    }
-    .map-stage { position: relative; display: inline-block; width: 100%; height: 100%; max-width: 1200px; display: flex; justify-content: center; align-items: center; }
-    
-    .grid { display: grid; gap: 6px; background: rgba(0,0,0,0.05); border: 4px solid var(--border-color); border-radius: 12px; width: 100%; height: 100%; max-height: 100%; position: relative; z-index: 2; padding: 6px; box-sizing: border-box; }
-    .grid.no-gap { gap: 0px; padding: 0px; }
-    
-    .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border-radius: 6px; position: relative; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
-    .grid.no-gap .cell { border-radius: 0px; box-shadow: none; }
-    
-    .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
-    .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
-    .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
-    /* 未踏破のときは白や不透明背景、開いたところだけ透過して下絵が見えるように */
-    .cell.revealed { background: transparent !important; box-shadow: none; }
+        /* 画面の半分以上を占める超特大プレビューエリア */
+        .map-container-wrapper { 
+            width: 100%; 
+            height: 60vh; 
+            min-height: 500px;
+            overflow: auto; 
+            border: 3px solid var(--border-color); 
+            border-radius: 16px; 
+            background: #ffffff; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.03);
+        }
+        .map-stage { position: relative; display: inline-block; width: 100%; height: 100%; max-width: 1200px; display: flex; justify-content: center; align-items: center; }
+        
+        /* 隙間埋め切り替え用クラス */
+        .grid { display: grid; gap: 6px; background: rgba(0,0,0,0.05); border: 4px solid var(--border-color); border-radius: 12px; width: 100%; height: 100%; max-height: 100%; position: relative; z-index: 2; padding: 6px; box-sizing: border-box; }
+        .grid.no-gap { gap: 0px; padding: 0px; }
+        
+        .cell { background: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; font-size: clamp(1rem, 4vw, 2.5rem); border-radius: 6px; position: relative; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .grid.no-gap .cell { border-radius: 0px; box-shadow: none; }
+        
+        .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
+        .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
+        .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
+        
+        /* 透過マスク用 */
+        .cell.revealed { background: transparent !important; box-shadow: none; }
 
-    .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
-    .player-icon { width: 80%; height: 80%; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-    
-    .cell-text { pointer-events: none; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2px; box-sizing: border-box; word-break: break-all; font-size: clamp(0.5rem, 1.8vw, 1.2rem); line-height: 1.1; }
+        .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
+        .player-icon { width: 80%; height: 80%; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .cell-text { pointer-events: none; z-index: 2; }
 
-    #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
+        /* 背景画像キャンバス（下層） */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 1; }
 
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; font-weight: bold; }
-    .toast.show { opacity: 1; }
+        .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px; }
 
-    .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
-    .checkbox-label input { cursor: pointer; }
+        /* 定型文エリア */
+        .text-panel { background: var(--panel-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); margin-top: 15px; }
 
-    .extra-bar { margin-top: 15px; background: var(--panel-bg); padding: 12px; border-radius: 15px; border: 1px solid var(--border-color); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-  </style>
+        /* 画面下部の固定クイック操作バー */
+        .fixed-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel-bg); border-top: 2px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 999; flex-wrap: wrap; }
+        .quick-counter { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: bold; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 25px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; font-weight: bold; }
+        .toast.show { opacity: 1; }
+
+        .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
+        .checkbox-label input { cursor: pointer; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌸マップすごろく ＆ 進捗ツール🌸</h1>
+    <h1>マップすごろく ＆ 進捗ツール</h1>
 
+    <!-- テーマ変更 -->
     <div class="theme-selector">
         <label style="font-weight: bold;">カラーテーマ:</label>
         <button onclick="setTheme('pink')" style="background:#ff69b4;">ピンク</button>
@@ -127,7 +145,8 @@
         <button onclick="setTheme('dark')" style="background:#334155;">ダーク</button>
     </div>
 
-    <div class="layout-top" style="grid-template-columns: repeat(2, 1fr);">
+    <div class="layout-top">
+        <!-- パネル 1 -->
         <div class="panel" id="panel-1">
             <div>
                 <div class="panel-header">
@@ -141,14 +160,14 @@
                     <input type="number" id="input-rows" value="8" min="2" max="30">
                     <button id="btn-apply-size">サイズを適用</button>
                     <button id="btn-random-pos" class="btn-green" style="margin-top:2px;">S/Gをランダム配置</button>
-                    <button id="btn-swap-sg-p1" style="background:#eab308; margin-top:2px;" onclick="swapStartGoal()">🔄 スタートとゴールを入れ替える</button>
                     
-                    <label style="margin-top:6px; font-weight:bold;">🖼️ 下に置く画像（1枚絵など）</label>
+                    <label style="margin-top:6px; font-weight:bold;">🖼️ 下に敷く画像</label>
                     <input type="file" id="input-bg-img" accept="image/*">
                 </div>
             </div>
         </div>
 
+        <!-- パネル 2 -->
         <div class="panel" id="panel-2">
             <div>
                 <div class="panel-header">
@@ -178,103 +197,99 @@
                         <button class="btn-misc btn-green" onclick="undoMove()">↩️ 1つ戻る</button>
                         <button class="btn-misc" style="background:#f59e0b;" onclick="resetCurrentOnly()">📍 現在地のみリセット</button>
                         <button class="btn-misc" style="background:#ef4444;" onclick="resetStartAndSteps()">🚶 スタート＆歩数をリセット</button>
-                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()">🗑️ 全てをリセット</button>
+                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()">💣 全てをリセット</button>
                         <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
-                        <button class="btn-misc" style="background:#eab308;" onclick="swapStartGoal()">🔄 スタートとゴールを逆にする</button>
-                        <input type="file" id="input-player-img" accept="image/*" style="display: none;">
+                        <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                     </div>
                 </div>
 
-                <div class="sub-note">※マップをタップでも操作できるよ！</div>
+                <div class="sub-note">※下のマップをタップでも操作できるよ！</div>
+            </div>
+        </div>
+
+        <!-- パネル 3 -->
+        <div class="panel" id="panel-3">
+            <div>
+                <div class="panel-header">
+                    <span class="section-num">3.</span>
+                    <input type="text" class="panel-title" id="p3-name" value="保存・出力・復元">
+                </div>
+                <div style="font-weight: bold; text-align: center; margin: 4px 0;">
+                    👟 歩数: <span id="step-count" style="font-size: 1.1rem; color: var(--primary);">0</span>
+                </div>
+
+                <label class="checkbox-label" style="margin-bottom: 4px;">
+                    <input type="checkbox" id="chk-include-zoom" checked> 🔍 右下にコマの拡大図を含める
+                </label>
+                <label class="checkbox-label" style="margin-bottom: 6px;">
+                    <input type="checkbox" id="chk-fill-gap" onchange="renderGrid()"> 🧩 マス目の隙間を埋める
+                </label>
+
+                <div class="btn-col">
+                    <button id="btn-download" style="background: #0ea5e9;">💾 結果画像を保存 (元サイズ)</button>
+                    <button id="btn-copy" class="btn-green">📋 画像をクリップボードにコピー</button>
+                    <hr style="width:100%; border:0; border-top:1px solid var(--border-color); margin: 2px 0;">
+                    <button onclick="exportBackupData()" style="background:#8b5cf6;">📦 バックアップ保存 (JSON)</button>
+                    <button onclick="document.getElementById('input-restore-file').click()" style="background:#6366f1;">📂 バックアップから復元</button>
+                    <input type="file" id="input-restore-file" accept=".json" style="display:none;" onchange="importBackupData(event)">
+                </div>
+            </div>
+            <div class="counter-box">
+                <span style="font-size:0.8rem; font-weight:bold; flex:1;">進捗:</span>
+                <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
+                <input type="number" id="p3-val" class="input-counter" value="0" oninput="updateTextOutput()">
+                <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
             </div>
         </div>
     </div>
 
-    <!-- 操作バー -->
-    <div class="extra-bar">
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
-            <label class="checkbox-label" style="margin: 0;">
-                <input type="checkbox" id="chk-include-zoom" checked> 🔍 右下にコマの拡大図を含める
-            </label>
-            <label class="checkbox-label" style="margin: 0;">
-                <input type="checkbox" id="chk-fill-gap" onchange="renderGrid()"> 🧩 マス目の隙間を埋める
-            </label>
-            <div style="font-weight: bold; margin-left: auto;">
-                👟 歩数: <span id="step-count" style="font-size: 1.1rem; color: var(--primary);">0</span>
-            </div>
-        </div>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 5px;">
-            <button id="btn-download" style="background: #0ea5e9; flex: 1; padding: 8px;">💾 PNG画像を保存 (元サイズ)</button>
-            <button id="btn-copy" class="btn-green" style="flex: 1; padding: 8px;">📋 PNG画像をクリップボードにコピー</button>
-            <button id="backupButton" style="background:#8b5cf6; padding: 8px 12px;">📤 バックアップ</button>
-            <button id="restoreButton" style="background:#10b981; padding: 8px 12px;">📥 復元</button>
-        </div>
-    </div>
-
-    <div class="map-container-wrapper" style="margin-top: 15px;">
+    <!-- 画面の半分以上を占める超特大マップ表示エリア -->
+    <div class="map-container-wrapper">
         <div id="stage-wrapper" class="map-stage">
             <canvas id="bg-canvas"></canvas>
             <div id="grid" class="grid"></div>
         </div>
+    </div>
+
+    <!-- 定型文生成パネル -->
+    <div class="text-panel">
+        <h3 style="margin-top:0; color:var(--accent);">📝 定型文自動生成 ＆ 出力</h3>
+        <div class="control-group">
+            <label>前に追加する文章 (接頭辞):</label>
+            <input type="text" id="text-prefix" value="【定期】マップ進行度" oninput="updateTextOutput()">
+            
+            <label>自動生成テキスト:</label>
+            <textarea id="text-output" rows="3" readonly></textarea>
+            
+            <label>後ろに追加する文章 (接尾辞):</label>
+            <input type="text" id="text-suffix" value=" ゴールさせてぇぇえええ泣泣" oninput="updateTextOutput()">
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="copyGeneratedText()" class="btn-green" style="flex:1;">📋 文章をコピー</button>
+            <button onclick="downloadTextAsImage()" style="background:#0ea5e9; flex:1;">🖼️ 文章結果を画像で保存</button>
+            <button onclick="copyTextAsImage()" style="background:#8b5cf6; flex:1;">📋 文章結果画像をコピー</button>
+        </div>
+    </div>
+</div>
+
+<!-- 画面下部の固定操作バー (パネル3の進捗のみ表示) -->
+<div class="fixed-bottom-bar">
+    <div class="quick-counter">
+        <span id="quick-p3-label">パネル3</span>:
+        <button class="btn-step" onclick="changeCount('p3', -1)">-</button>
+        <span id="quick-p3-val">0</span>
+        <button class="btn-step" onclick="changeCount('p3', 1)">+</button>
     </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-    let db = null;
-    let dbReadyResolve;
-    const dbReadyPromise = new Promise((res) => { dbReadyResolve = res; });
-    window.dbReadyPromise = dbReadyPromise;
-
-    const openReq = indexedDB.open("SugorokuAssetDB", 1);
-    openReq.onupgradeneeded = function(e) {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains("assets")) {
-        db.createObjectStore("assets");
-      }
-    };
-    openReq.onsuccess = function(e) {
-      db = e.target.result;
-      dbReadyResolve();
-    };
-    openReq.onerror = function() {
-      dbReadyResolve();
-    };
-
-    function putToDB(key, blob) {
-      return new Promise((resolve, reject) => {
-        try {
-          if (!db) { resolve(); return; }
-          const tx = db.transaction("assets", "readwrite");
-          const store = tx.objectStore("assets");
-          const req = store.put(blob, key);
-          req.onsuccess = () => resolve();
-          req.onerror = (e) => reject(e);
-        } catch (err) { resolve(); }
-      });
-    }
-
-    function getFromDB(key) {
-      return new Promise((resolve) => {
-        try {
-          if (!db) { resolve(null); return; }
-          const tx = db.transaction("assets", "readonly");
-          const store = tx.objectStore("assets");
-          const req = store.get(key);
-          req.onsuccess = () => resolve(req.result || null);
-          req.onerror = () => resolve(null);
-        } catch (err) { resolve(null); }
-      });
-    }
-
     let cols = 8, rows = 8;
     let gridData = [], textData = [], revealedGrid = [];
-    let startPos = { r: 7, c: 7 }, goalPos = { r: 0, c: 0 }, currentPos = { r: 7, c: 7 };
+    let startPos = { r: 0, c: 0 }, goalPos = { r: 7, c: 7 }, currentPos = { r: 0, c: 0 };
     let moveHistory = []; 
     let stepCount = 0;
-    let playerIconBlobKey = null;
-    let bgImageBlobKey = null;
     let playerIconSrc = null;
     let bgImageSrc = null;
     let bgImage = null; 
@@ -292,33 +307,19 @@
 
     function setTheme(theme) {
         document.body.className = theme === 'pink' ? '' : 'theme-' + theme;
-        localStorage.setItem('theme', theme);
     }
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) setTheme(savedTheme);
 
-    function initMap(preserveData = false) {
+    function initMap() {
         cols = parseInt(document.getElementById('input-cols').value) || 8;
         rows = parseInt(document.getElementById('input-rows').value) || 8;
-        if (!preserveData || gridData.length === 0) {
-            gridData = Array(rows).fill(0).map(() => Array(cols).fill(0));
-            textData = Array(rows).fill("").map(() => Array(cols).fill(""));
-            revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
-            startPos = { r: rows - 1, c: cols - 1 }; goalPos = { r: 0, c: 0 };
-            resetStartAndSteps(true);
-        } else {
-            renderGrid();
-        }
+        gridData = Array(rows).fill(0).map(() => Array(cols).fill(0));
+        textData = Array(rows).fill("").map(() => Array(cols).fill(""));
+        revealedGrid = Array(rows).fill(false).map(() => Array(cols).fill(false));
+        startPos = { r: 0, c: 0 }; goalPos = { r: rows - 1, c: cols - 1 };
+        resetStartAndSteps(true);
     }
 
-    function swapStartGoal() {
-        const temp = { ...startPos };
-        startPos = { ...goalPos };
-        goalPos = temp;
-        renderGrid();
-        showToast("スタートとゴールを入れ替えました！");
-    }
-
+    /* リセット機能群 */
     function resetCurrentOnly() {
         if (confirm("現在地と移動履歴をリセットしますか？")) {
             moveHistory = [];
@@ -345,14 +346,10 @@
         if (confirm("【警告】画像や壁の設定も含めて全て初期化しますか？")) {
             bgImage = null;
             bgImageSrc = null;
-            bgImageBlobKey = null;
             playerIconSrc = null;
-            playerIconBlobKey = null;
             document.getElementById('input-bg-img').value = '';
             document.getElementById('input-player-img').value = '';
-            document.getElementById('input-cols').value = 8;
-            document.getElementById('input-rows').value = 8;
-            initMap(false);
+            initMap();
             showToast("全てのリセットが完了しました！");
         }
     }
@@ -369,12 +366,13 @@
         }
     }
 
+    /* 誤操作対策付き 1つ戻る */
     function undoMove() {
         if (moveHistory.length === 0) {
             showToast("これ以上戻れません");
             return;
         }
-        if (confirm("ひとつ前に戻しますか？")) {
+        if (confirm("ひとつ前に戻しますか？（操作ミス防止の確認）")) {
             currentPos = moveHistory.pop();
             stepCount = Math.max(0, stepCount - 1);
             renderGrid();
@@ -382,13 +380,9 @@
         }
     }
 
-    document.getElementById('input-player-img').addEventListener('change', async function(e) {
+    function handleImageUpload(e) {
         const file = e.target.files[0];
         if (file) {
-            await dbReadyPromise;
-            playerIconBlobKey = 'playerIcon_' + Date.now();
-            await putToDB(playerIconBlobKey, file);
-            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 playerIconSrc = evt.target.result;
@@ -397,15 +391,12 @@
             };
             reader.readAsDataURL(file);
         }
-    });
+    }
 
-    document.getElementById('input-bg-img').addEventListener('change', async function(e) {
+    // 背景画像のアップロード
+    document.getElementById('input-bg-img').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-            await dbReadyPromise;
-            bgImageBlobKey = 'bgImage_' + Date.now();
-            await putToDB(bgImageBlobKey, file);
-
             const reader = new FileReader();
             reader.onload = function(evt) {
                 bgImageSrc = evt.target.result;
@@ -423,39 +414,15 @@
 
     function resizeCanvases() {
         const rect = gridEl.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-            bgCanvas.width = rect.width;
-            bgCanvas.height = rect.height;
-            drawBgCanvas();
-        }
+        bgCanvas.width = rect.width;
+        bgCanvas.height = rect.height;
+        drawBgCanvas();
     }
 
     function drawBgCanvas() {
         bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
         if (bgImage) {
-            // 背景画像がある場合、画面上では「未踏破のマス」が不透明（白やテーマ色）で上に覆いかぶさり、
-            // 開いたマスだけ下が透けるように canvas 側でマスクを描画する
-            drawMaskedBackgroundToCanvas(bgCtx, bgCanvas.width, bgCanvas.height);
-        }
-    }
-
-    // 画面表示用および保存用共通のマスク・背景描画ロジック
-    function drawMaskedBackgroundToCanvas(targetCtx, w, h) {
-        if (!bgImage) return;
-        const cellW = w / cols;
-        const cellH = h / rows;
-
-        // まず下絵をそのまま描画
-        targetCtx.drawImage(bgImage, 0, 0, w, h);
-
-        // 未踏破（revealedGridがfalse）のマスに不透明な白（またはテーマに合わせたカバー）を上から重ねて隠す
-        targetCtx.fillStyle = '#ffffff'; 
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (!revealedGrid[r] || !revealedGrid[r][c]) {
-                    targetCtx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
-                }
-            }
+            bgCtx.drawImage(bgImage, 0, 0, bgCanvas.width, bgCanvas.height);
         }
     }
 
@@ -478,7 +445,6 @@
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 
-                // 下絵がある場合、開いたマスは透明にして下絵（背景キャンバス）が透けるようにする
                 if (bgImage && revealedGrid[r] && revealedGrid[r][c]) {
                     cell.classList.add('revealed');
                 }
@@ -491,12 +457,12 @@
                     if (playerIconSrc) {
                         cell.innerHTML += `<img src="${playerIconSrc}" class="player-icon" alt="コマ">`;
                     } else {
-                        cell.innerHTML += '<div style="position:absolute; z-index:3; font-size:1.2rem;">📍</div>';
+                        cell.innerHTML += '📍';
                     }
                 }
                 
                 if (showText && textData[r][c]) {
-                    cell.innerHTML += `<div class="cell-text">${textData[r][c]}</div>`;
+                    cell.innerHTML += `<span class="cell-text">${textData[r][c]}</span>`;
                 }
 
                 cell.onclick = () => handleCellClick(r, c);
@@ -504,6 +470,7 @@
             }
         }
         stepCountEl.textContent = stepCount;
+        updateTextOutput();
         setTimeout(resizeCanvases, 10);
     }
 
@@ -538,7 +505,54 @@
         renderGrid();
     }
 
-    document.getElementById('btn-apply-size').onclick = () => { initMap(true); showToast("サイズ変更しました！"); };
+    /* パネル進捗(+/-)ボタン機能 */
+    function changeCount(panelId, delta) {
+        const input = document.getElementById(`${panelId}-val`);
+        let val = parseInt(input.value) || 0;
+        val += delta;
+        input.value = val;
+        updateTextOutput();
+    }
+
+    /* リアルタイム定型文更新処理 */
+    function updateTextOutput() {
+        const p1Name = document.getElementById('p1-name').value;
+        const p1Val = document.getElementById('p1-val').value;
+        const p2Name = document.getElementById('p2-name').value;
+        const p2Val = document.getElementById('p2-val').value;
+        const p3Name = document.getElementById('p3-name').value;
+        const p3Val = document.getElementById('p3-val').value;
+
+        document.getElementById('quick-p3-label').textContent = p3Name;
+        document.getElementById('quick-p3-val').textContent = p3Val;
+
+        let totalWalkable = 0;
+        let revealedCount = 0;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (gridData[r] && gridData[r][c] !== 1) {
+                    totalWalkable++;
+                    if (revealedGrid[r] && revealedGrid[r][c]) {
+                        revealedCount++;
+                    }
+                }
+            }
+        }
+        const progressPercent = totalWalkable > 0 ? Math.round((revealedCount / totalWalkable) * 100) : 0;
+
+        const prefix = document.getElementById('text-prefix').value;
+        const suffix = document.getElementById('text-suffix').value;
+        
+        const generated = `${prefix}${progressPercent}% 現在${stepCount}歩 (${p1Name}${p1Val}/${p2Name}${p2Val}/${p3Name}${p3Val})${suffix}`;
+
+        document.getElementById('text-output').value = generated;
+    }
+
+    ['p1-name', 'p2-name', 'p3-name'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateTextOutput);
+    });
+
+    document.getElementById('btn-apply-size').onclick = () => { initMap(); showToast("サイズ変更しました！"); };
     document.getElementById('btn-random-pos').onclick = () => {
         startPos = { r: Math.floor(Math.random()*rows), c: Math.floor(Math.random()*cols) };
         goalPos = { r: Math.floor(Math.random()*rows), c: Math.floor(Math.random()*cols) };
@@ -546,140 +560,81 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    function blobToDataURL(blob) {
-        return new Promise((res, rej) => {
-            const r = new FileReader();
-            r.onload = () => res(r.result);
-            r.onerror = () => rej();
-            r.readAsDataURL(blob);
-        });
+    /* バックアップ保存（JSON） ＆ 復元機能 */
+    function exportBackupData() {
+        const backupObj = {
+            cols, rows, gridData, textData, revealedGrid,
+            startPos, goalPos, currentPos, moveHistory, stepCount,
+            p1Name: document.getElementById('p1-name').value,
+            p1Val: document.getElementById('p1-val').value,
+            p2Name: document.getElementById('p2-name').value,
+            p2Val: document.getElementById('p2-val').value,
+            p3Name: document.getElementById('p3-name').value,
+            p3Val: document.getElementById('p3-val').value,
+            prefix: document.getElementById('text-prefix').value,
+            suffix: document.getElementById('text-suffix').value,
+            playerIconSrc, bgImageSrc
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `map_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast("バックアップファイルを保存しました！");
     }
 
-    document.getElementById('backupButton').onclick = async () => {
-        let pIconDataUrl = '';
-        let bgImgDataUrl = '';
-        
-        try {
-            if (window.dbReadyPromise) await window.dbReadyPromise;
-            
-            if (playerIconBlobKey && typeof getFromDB === 'function') {
-                try {
-                    const blob = await getFromDB(playerIconBlobKey);
-                    if (blob) pIconDataUrl = await blobToDataURL(blob);
-                } catch (e) { console.warn("コマ画像のバックアップをスキップします"); }
-            }
-            
-            if (bgImageBlobKey && typeof getFromDB === 'function') {
-                try {
-                    const blob = await getFromDB(bgImageBlobKey);
-                    if (blob) bgImgDataUrl = await blobToDataURL(blob);
-                } catch (e) { console.warn("背景画像のバックアップをスキップします"); }
-            }
-        } catch (dbErr) {
-            console.warn("DBデータ読み込みエラーを無視して続行します", dbErr);
-        }
+    function importBackupData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = JSON.parse(evt.target.result);
+                cols = data.cols; rows = data.rows;
+                document.getElementById('input-cols').value = cols;
+                document.getElementById('input-rows').value = rows;
+                gridData = data.gridData;
+                textData = data.textData;
+                revealedGrid = data.revealedGrid;
+                startPos = data.startPos;
+                goalPos = data.goalPos;
+                currentPos = data.currentPos;
+                moveHistory = data.moveHistory;
+                stepCount = data.stepCount;
 
-        try {
-            const backupObj = {
-                cols, rows, gridData, textData, revealedGrid,
-                startPos, goalPos, currentPos, moveHistory, stepCount,
-                p1Name: document.getElementById('p1-name').value,
-                p2Name: document.getElementById('p2-name').value,
-                playerIconDataUrl: pIconDataUrl,
-                bgImgDataUrl: bgImgDataUrl
-            };
+                document.getElementById('p1-name').value = data.p1Name || "マップ設定";
+                document.getElementById('p1-val').value = data.p1Val || 0;
+                document.getElementById('p2-name').value = data.p2Name || "操作・移動";
+                document.getElementById('p2-val').value = data.p2Val || 0;
+                document.getElementById('p3-name').value = data.p3Name || "保存・出力";
+                document.getElementById('p3-val').value = data.p3Val || 0;
+                document.getElementById('text-prefix').value = data.prefix || "【定期】マップ進行度";
+                document.getElementById('text-suffix').value = data.suffix || " ゴールさせてぇぇえええ泣泣";
 
-            const jsonString = JSON.stringify(backupObj, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `sugoroku-backup-${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast("バックアップファイルを作成しました！");
-        } catch (err) {
-            console.error("バックアップ保存エラー:", err);
-            alert("バックアップのファイル生成に失敗しました。データ量やメモリ制限を確認してください。");
-        }
-    };
+                playerIconSrc = data.playerIconSrc || null;
+                bgImageSrc = data.bgImageSrc || null;
 
-    document.getElementById('restoreButton').onclick = () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".json";
-        input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (evt) => {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    await dbReadyPromise;
-
-                    cols = data.cols || 8;
-                    rows = data.rows || 8;
-                    document.getElementById('input-cols').value = cols;
-                    document.getElementById('input-rows').value = rows;
-
-                    gridData = data.gridData || Array(rows).fill(0).map(() => Array(cols).fill(0));
-                    textData = data.textData || Array(rows).fill("").map(() => Array(cols).fill(""));
-                    revealedGrid = data.revealedGrid || Array(rows).fill(false).map(() => Array(cols).fill(false));
-
-                    startPos = data.startPos || { r: rows - 1, c: cols - 1 };
-                    goalPos = data.goalPos || { r: 0, c: 0 };
-                    currentPos = data.currentPos || { ...startPos };
-                    moveHistory = data.moveHistory || [];
-                    stepCount = data.stepCount || 0;
-
-                    if (data.p1Name) document.getElementById('p1-name').value = data.p1Name;
-                    if (data.p2Name) document.getElementById('p2-name').value = data.p2Name;
-
-                    if (data.playerIconDataUrl) {
-                        try {
-                            const res = await fetch(data.playerIconDataUrl);
-                            const blob = await res.blob();
-                            playerIconBlobKey = 'playerIcon_' + Date.now();
-                            await putToDB(playerIconBlobKey, blob);
-                            playerIconSrc = data.playerIconDataUrl;
-                        } catch(e) { playerIconSrc = null; }
-                    } else {
-                        playerIconSrc = null;
-                        playerIconBlobKey = null;
-                    }
-
-                    if (data.bgImgDataUrl) {
-                        try {
-                            const res = await fetch(data.bgImgDataUrl);
-                            const blob = await res.blob();
-                            bgImageBlobKey = 'bgImage_' + Date.now();
-                            await putToDB(bgImageBlobKey, blob);
-                            bgImageSrc = data.bgImgDataUrl;
-                            bgImage = new Image();
-                            bgImage.onload = function() {
-                                renderGrid();
-                                showToast("データを復元しました！");
-                            };
-                            bgImage.src = bgImageSrc;
-                            return;
-                        } catch(e) { bgImage = null; }
-                    }
-                    
+                if (bgImageSrc) {
+                    bgImage = new Image();
+                    bgImage.onload = function() {
+                        renderGrid();
+                    };
+                    bgImage.src = bgImageSrc;
+                } else {
                     bgImage = null;
-                    bgImageSrc = null;
-                    bgImageBlobKey = null;
                     renderGrid();
-                    showToast("データを復元しました！");
-                } catch (err) {
-                    console.error(err);
-                    alert("復元に失敗しました。ファイル形式を確認してください。");
                 }
-            };
-            reader.readAsText(file);
+                showToast("データを復元しました！");
+            } catch (err) {
+                alert("バックアップファイルの読み込みに失敗しました。");
+            }
         };
-        input.click();
-    };
+        reader.readAsText(file);
+    }
 
+    /* 高解像度合成処理 ＆ 右下拡大表示合成（画像が全て隠れるように修正） */
     function generateFullResolutionCanvas(callback) {
         const stage = document.getElementById('stage-wrapper');
         const stageRect = stage.getBoundingClientRect();
@@ -687,8 +642,8 @@
         const includeZoom = document.getElementById('chk-include-zoom').checked;
         const fillGap = document.getElementById('chk-fill-gap').checked;
 
-        let targetW = stageRect.width || 800;
-        let targetH = stageRect.height || 600;
+        let targetW = stageRect.width;
+        let targetH = stageRect.height;
 
         if (bgImage) {
             targetW = bgImage.naturalWidth;
@@ -701,6 +656,7 @@
         const ctx = outCanvas.getContext('2d');
 
         function drawMapBase(targetCtx, w, h) {
+            // 背景のベース（白）
             targetCtx.fillStyle = '#ffffff';
             targetCtx.fillRect(0, 0, w, h);
 
@@ -708,14 +664,35 @@
             const cellH = h / rows;
 
             if (bgImage) {
-                // 保存用画像でも未踏破のマスを白で隠すマスク処理を完全に同期
-                drawMaskedBackgroundToCanvas(targetCtx, w, h);
+                // 背景画像がある場合：未公開のマスは不透明な白（またはグリッド背景）で完全に隠し、
+                // revealedGridがtrueの場所だけ背景画像が見えるようにマスクする
+                
+                // 1. まずベース全体を白（あるいは不透明な状態）で覆い、未公開部分は画像が見えないようにする
+                targetCtx.fillStyle = '#ffffff';
+                targetCtx.fillRect(0, 0, w, h);
+
+                // 2. 開かれているマスだけ背景画像を描画する
+                targetCtx.save();
+                targetCtx.beginPath();
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (revealedGrid[r] && revealedGrid[r][c]) {
+                            targetCtx.rect(c * cellW, r * cellH, cellW, cellH);
+                        }
+                    }
+                }
+                targetCtx.clip();
+                targetCtx.drawImage(bgImage, 0, 0, w, h);
+                targetCtx.restore();
             }
 
             if (!fillGap) {
                 targetCtx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
                 targetCtx.lineWidth = 2;
             }
+            targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = 'middle';
 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
@@ -727,38 +704,26 @@
                     }
 
                     if (gridData[r][c] === 1) {
-                        targetCtx.fillStyle = 'rgba(150, 150, 150, 0.8)';
+                        targetCtx.fillStyle = 'rgba(150, 150, 150, 0.9)';
                         targetCtx.fillRect(x, y, cellW, cellH);
                     }
                     if (r === startPos.r && c === startPos.c) {
-                        targetCtx.fillStyle = 'rgba(50, 205, 50, 0.7)';
+                        targetCtx.fillStyle = 'rgba(50, 205, 50, 0.85)';
                         targetCtx.fillRect(x, y, cellW, cellH);
                         targetCtx.fillStyle = '#fff';
-                        targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
-                        targetCtx.textAlign = 'center';
-                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('S', x + cellW / 2, y + cellH / 2);
                     }
                     if (r === goalPos.r && c === goalPos.c) {
-                        targetCtx.fillStyle = 'rgba(255, 69, 0, 0.7)';
+                        targetCtx.fillStyle = 'rgba(255, 69, 0, 0.85)';
                         targetCtx.fillRect(x, y, cellW, cellH);
                         targetCtx.fillStyle = '#fff';
-                        targetCtx.font = `bold ${cellH * 0.3}px sans-serif`;
-                        targetCtx.textAlign = 'center';
-                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('G', x + cellW / 2, y + cellH / 2);
                     }
                     if (r === currentPos.r && c === currentPos.c) {
-                        targetCtx.font = `${cellH * 0.5}px sans-serif`;
-                        targetCtx.textAlign = 'center';
-                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText('📍', x + cellW / 2, y + cellH / 2);
                     }
                     if (showText && textData[r][c]) {
                         targetCtx.fillStyle = '#000';
-                        targetCtx.font = `bold ${Math.max(10, cellH * 0.28)}px sans-serif`;
-                        targetCtx.textAlign = 'center';
-                        targetCtx.textBaseline = 'middle';
                         targetCtx.fillText(textData[r][c], x + cellW / 2, y + cellH / 2);
                     }
                 }
@@ -820,13 +785,13 @@
     }
 
     document.getElementById('btn-download').onclick = () => {
-        showToast("PNG画像を生成中...");
+        showToast("高解像度画像を生成中...");
         generateFullResolutionCanvas(canvas => {
             const a = document.createElement('a');
             a.download = 'map-result.png';
             a.href = canvas.toDataURL('image/png');
             a.click();
-            showToast("PNG画像を保存しました！");
+            showToast("画像を保存しました！");
         });
     };
 
@@ -835,13 +800,13 @@
             showToast("お使いのブラウザは直接コピー非対応です");
             return;
         }
-        showToast("PNG画像を生成中...");
+        showToast("画像を生成中...");
         generateFullResolutionCanvas(canvas => {
             canvas.toBlob(blob => {
                 try {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
-                        showToast("PNG画像をクリップボードにコピーしました！");
+                        showToast("クリップボードにコピーしました！");
                     });
                 } catch (e) {
                     showToast("コピーが拒否されました");
@@ -850,9 +815,61 @@
         });
     };
 
+    function copyGeneratedText() {
+        const text = document.getElementById('text-output').value;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("文章をコピーしました！");
+        });
+    }
+
+    function createTextCanvas() {
+        const text = document.getElementById('text-output').value;
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#ff69b4';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#333333';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 40);
+        return canvas;
+    }
+
+    function downloadTextAsImage() {
+        const canvas = createTextCanvas();
+        const a = document.createElement('a');
+        a.download = 'text-result.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        showToast("文章画像を保存しました！");
+    }
+
+    function copyTextAsImage() {
+        if (!navigator.clipboard || !window.ClipboardItem) {
+            showToast("お使いのブラウザは直接コピー非対応です");
+            return;
+        }
+        const canvas = createTextCanvas();
+        canvas.toBlob(blob => {
+            const item = new ClipboardItem({ 'image/png': blob });
+            navigator.clipboard.write([item]).then(() => {
+                showToast("文章画像をコピーしました！");
+            });
+        });
+    }
+
     window.onresize = resizeCanvases;
-    dbReadyPromise.then(() => { initMap(false); });
-    setTimeout(() => { if (!gridData.length) initMap(false); }, 500);
+    initMap();
 </script>
 </body>
 </html>
