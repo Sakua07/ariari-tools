@@ -95,6 +95,7 @@
     .cell.wall { background-color: var(--cell-wall) !important; color: #ffffff; }
     .cell.start { background-color: var(--accent-start) !important; color: #ffffff; }
     .cell.goal { background-color: var(--accent-goal) !important; color: #ffffff; }
+    /* 未踏破のときは白や不透明背景、開いたところだけ透過して下絵が見えるように */
     .cell.revealed { background: transparent !important; box-shadow: none; }
 
     .badge { position: absolute; top: 2px; left: 2px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; background: rgba(0,0,0,0.6); pointer-events: none; z-index: 3; }
@@ -189,7 +190,7 @@
         </div>
     </div>
 
-    <!-- 保存・バックアップ・画像保存の操作バー -->
+    <!-- 操作バー -->
     <div class="extra-bar">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
             <label class="checkbox-label" style="margin: 0;">
@@ -203,8 +204,8 @@
             </div>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 5px;">
-            <button id="btn-download" style="background: #0ea5e9; flex: 1; padding: 8px;">💾 結果画像を保存 (元サイズ)</button>
-            <button id="btn-copy" class="btn-green" style="flex: 1; padding: 8px;">📋 画像をクリップボードにコピー</button>
+            <button id="btn-download" style="background: #0ea5e9; flex: 1; padding: 8px;">💾 PNG画像を保存 (元サイズ)</button>
+            <button id="btn-copy" class="btn-green" style="flex: 1; padding: 8px;">📋 PNG画像をクリップボードにコピー</button>
             <button id="backupButton" style="background:#8b5cf6; padding: 8px 12px;">📤 バックアップ</button>
             <button id="restoreButton" style="background:#10b981; padding: 8px 12px;">📥 復元</button>
         </div>
@@ -432,7 +433,29 @@
     function drawBgCanvas() {
         bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
         if (bgImage) {
-            bgCtx.drawImage(bgImage, 0, 0, bgCanvas.width, bgCanvas.height);
+            // 背景画像がある場合、画面上では「未踏破のマス」が不透明（白やテーマ色）で上に覆いかぶさり、
+            // 開いたマスだけ下が透けるように canvas 側でマスクを描画する
+            drawMaskedBackgroundToCanvas(bgCtx, bgCanvas.width, bgCanvas.height);
+        }
+    }
+
+    // 画面表示用および保存用共通のマスク・背景描画ロジック
+    function drawMaskedBackgroundToCanvas(targetCtx, w, h) {
+        if (!bgImage) return;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        // まず下絵をそのまま描画
+        targetCtx.drawImage(bgImage, 0, 0, w, h);
+
+        // 未踏破（revealedGridがfalse）のマスに不透明な白（またはテーマに合わせたカバー）を上から重ねて隠す
+        targetCtx.fillStyle = '#ffffff'; 
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!revealedGrid[r] || !revealedGrid[r][c]) {
+                    targetCtx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
+                }
+            }
         }
     }
 
@@ -455,6 +478,7 @@
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 
+                // 下絵がある場合、開いたマスは透明にして下絵（背景キャンバス）が透けるようにする
                 if (bgImage && revealedGrid[r] && revealedGrid[r][c]) {
                     cell.classList.add('revealed');
                 }
@@ -684,29 +708,8 @@
             const cellH = h / rows;
 
             if (bgImage) {
-                const maskCanvas = document.createElement('canvas');
-                maskCanvas.width = w;
-                maskCanvas.height = h;
-                const maskCtx = maskCanvas.getContext('2d');
-
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        if (revealedGrid[r] && revealedGrid[r][c]) {
-                            maskCtx.fillStyle = '#000';
-                            maskCtx.fillRect(c * cellW, r * cellH, cellW, cellH);
-                        }
-                    }
-                }
-
-                const bgPatternCanvas = document.createElement('canvas');
-                bgPatternCanvas.width = w;
-                bgPatternCanvas.height = h;
-                const pCtx = bgPatternCanvas.getContext('2d');
-                pCtx.drawImage(bgImage, 0, 0, w, h);
-                pCtx.globalCompositeOperation = 'destination-in';
-                pCtx.drawImage(maskCanvas, 0, 0);
-
-                targetCtx.drawImage(bgPatternCanvas, 0, 0);
+                // 保存用画像でも未踏破のマスを白で隠すマスク処理を完全に同期
+                drawMaskedBackgroundToCanvas(targetCtx, w, h);
             }
 
             if (!fillGap) {
@@ -817,13 +820,13 @@
     }
 
     document.getElementById('btn-download').onclick = () => {
-        showToast("高解像度画像を生成中...");
+        showToast("PNG画像を生成中...");
         generateFullResolutionCanvas(canvas => {
             const a = document.createElement('a');
             a.download = 'map-result.png';
             a.href = canvas.toDataURL('image/png');
             a.click();
-            showToast("画像を保存するよ！");
+            showToast("PNG画像を保存しました！");
         });
     };
 
@@ -832,13 +835,13 @@
             showToast("お使いのブラウザは直接コピー非対応です");
             return;
         }
-        showToast("画像を生成中...");
+        showToast("PNG画像を生成中...");
         generateFullResolutionCanvas(canvas => {
             canvas.toBlob(blob => {
                 try {
                     const item = new ClipboardItem({ 'image/png': blob });
                     navigator.clipboard.write([item]).then(() => {
-                        showToast("クリップボードにコピーしたよ！");
+                        showToast("PNG画像をクリップボードにコピーしました！");
                     });
                 } catch (e) {
                     showToast("コピーが拒否されました");
