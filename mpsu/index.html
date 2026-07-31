@@ -119,9 +119,16 @@
 
     .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; user-select: none; margin-top: 4px; }
     .checkbox-label input { cursor: pointer; }
+
+    #editToggleContainer { position:fixed; top:20px; right:20px; z-index:10000; }
+    #editToggleBtn { background-color: var(--primary); color:white; border:none; border-radius:15px; width:100px; height:38px; font-weight:bold; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
+
+<div id="editToggleContainer">
+  <button id="editToggleBtn">データ管理</button>
+</div>
 
 <div class="container">
     <h1>🌸マップすごろく ＆ 進捗ツール🌸</h1>
@@ -185,10 +192,10 @@
                         <button class="btn-misc btn-green" onclick="undoMove()">↩️ 1つ戻る</button>
                         <button class="btn-misc" style="background:#f59e0b;" onclick="resetCurrentOnly()">📍 現在地のみリセット</button>
                         <button class="btn-misc" style="background:#ef4444;" onclick="resetStartAndSteps()">🚶 スタート＆歩数をリセット</button>
-                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()">🗑️ 全てをリセット</button>
+                        <button class="btn-misc" style="background:#991b1b;" onclick="resetAll()"> 全てをリセット</button>
                         <button class="btn-misc btn-green" onclick="document.getElementById('input-player-img').click()">コマをカスタマイズ</button>
                         <button class="btn-misc" style="background:#eab308;" onclick="swapStartGoal()">🔄 スタートとゴールを逆にする</button>
-                        <input type="file" id="input-player-img" accept="image/*" style="display: none;">
+                        <input type="file" id="input-player-img" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                     </div>
                 </div>
 
@@ -271,10 +278,10 @@
 <div id="toast" class="toast"></div>
 
 <script>
+    // ---------- IndexedDB 初期化 (音声・画像の大容量データ安全保持用) ----------
     let db = null;
     let dbReadyResolve;
     const dbReadyPromise = new Promise((res) => { dbReadyResolve = res; });
-    window.dbReadyPromise = dbReadyPromise;
 
     const openReq = indexedDB.open("SugorokuAssetDB", 1);
     openReq.onupgradeneeded = function(e) {
@@ -288,26 +295,25 @@
       dbReadyResolve();
     };
     openReq.onerror = function() {
+      console.error("IndexedDB error", openReq.error);
       dbReadyResolve();
     };
 
     function putToDB(key, blob) {
       return new Promise((resolve, reject) => {
         try {
-          if (!db) { resolve(); return; }
           const tx = db.transaction("assets", "readwrite");
           const store = tx.objectStore("assets");
           const req = store.put(blob, key);
           req.onsuccess = () => resolve();
           req.onerror = (e) => reject(e);
-        } catch (err) { resolve(); }
+        } catch (err) { reject(err); }
       });
     }
 
     function getFromDB(key) {
       return new Promise((resolve) => {
         try {
-          if (!db) { resolve(null); return; }
           const tx = db.transaction("assets", "readonly");
           const store = tx.objectStore("assets");
           const req = store.get(key);
@@ -317,6 +323,7 @@
       });
     }
 
+    // ---------- 状態変数 ----------
     let cols = 8, rows = 8;
     let gridData = [], textData = [], revealedGrid = [];
     let startPos = { r: 7, c: 7 }, goalPos = { r: 0, c: 0 }, currentPos = { r: 7, c: 7 };
@@ -431,6 +438,7 @@
         }
     }
 
+    // コマ画像アップロード
     document.getElementById('input-player-img').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -448,6 +456,7 @@
         }
     });
 
+    // 背景画像アップロード
     document.getElementById('input-bg-img').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -618,7 +627,8 @@
         showToast("S/Gをランダム配置しました！");
     };
 
-    function blobToDataURL(blob) {
+    // ---------- バックアップ・復元処理（IndexedDB対応） ----------
+    async function blobToDataURL(blob) {
         return new Promise((res, rej) => {
             const r = new FileReader();
             r.onload = () => res(r.result);
@@ -627,32 +637,20 @@
         });
     }
 
-    // ---------- 超安全・絶対落ちないバックアップ処理（画像処理でエラーが出ても絶対にダウンロードする） ----------
     document.getElementById('backupButton').onclick = async () => {
-        let pIconDataUrl = '';
-        let bgImgDataUrl = '';
-        
+        await dbReadyPromise;
         try {
-            if (window.dbReadyPromise) await window.dbReadyPromise;
-            
-            if (playerIconBlobKey && typeof getFromDB === 'function') {
-                try {
-                    const blob = await getFromDB(playerIconBlobKey);
-                    if (blob) pIconDataUrl = await blobToDataURL(blob);
-                } catch (e) { console.warn("コマ画像のバックアップをスキップします"); }
+            let pIconDataUrl = '';
+            if (playerIconBlobKey) {
+                const blob = await getFromDB(playerIconBlobKey);
+                if (blob) pIconDataUrl = await blobToDataURL(blob);
             }
-            
-            if (bgImageBlobKey && typeof getFromDB === 'function') {
-                try {
-                    const blob = await getFromDB(bgImageBlobKey);
-                    if (blob) bgImgDataUrl = await blobToDataURL(blob);
-                } catch (e) { console.warn("背景画像のバックアップをスキップします"); }
+            let bgImgDataUrl = '';
+            if (bgImageBlobKey) {
+                const blob = await getFromDB(bgImageBlobKey);
+                if (blob) bgImgDataUrl = await blobToDataURL(blob);
             }
-        } catch (dbErr) {
-            console.warn("DBデータ読み込みエラーを無視して続行します", dbErr);
-        }
 
-        try {
             const backupObj = {
                 cols, rows, gridData, textData, revealedGrid,
                 startPos, goalPos, currentPos, moveHistory, stepCount,
@@ -664,12 +662,10 @@
                 p3Val: document.getElementById('p3-val').value,
                 prefix: document.getElementById('text-prefix').value,
                 suffix: document.getElementById('text-suffix').value,
-                playerIconDataUrl: pIconDataUrl,
-                bgImgDataUrl: bgImgDataUrl
+                playerIconDataUrl, bgImgDataUrl
             };
 
-            const jsonString = JSON.stringify(backupObj, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -678,8 +674,8 @@
             URL.revokeObjectURL(url);
             showToast("バックアップファイルを作成しました！");
         } catch (err) {
-            console.error("バックアップ保存エラー:", err);
-            alert("バックアップのファイル生成に失敗しました。データ量やメモリ制限を確認してください。");
+            console.error(err);
+            alert("バックアップに失敗しました。");
         }
     };
 
@@ -721,40 +717,35 @@
                     if (data.suffix) document.getElementById('text-suffix').value = data.suffix;
 
                     if (data.playerIconDataUrl) {
-                        try {
-                            const res = await fetch(data.playerIconDataUrl);
-                            const blob = await res.blob();
-                            playerIconBlobKey = 'playerIcon_' + Date.now();
-                            await putToDB(playerIconBlobKey, blob);
-                            playerIconSrc = data.playerIconDataUrl;
-                        } catch(e) { playerIconSrc = null; }
+                        const res = await fetch(data.playerIconDataUrl);
+                        const blob = await res.blob();
+                        playerIconBlobKey = 'playerIcon_' + Date.now();
+                        await putToDB(playerIconBlobKey, blob);
+                        playerIconSrc = data.playerIconDataUrl;
                     } else {
                         playerIconSrc = null;
                         playerIconBlobKey = null;
                     }
 
                     if (data.bgImgDataUrl) {
-                        try {
-                            const res = await fetch(data.bgImgDataUrl);
-                            const blob = await res.blob();
-                            bgImageBlobKey = 'bgImage_' + Date.now();
-                            await putToDB(bgImageBlobKey, blob);
-                            bgImageSrc = data.bgImgDataUrl;
-                            bgImage = new Image();
-                            bgImage.onload = function() {
-                                renderGrid();
-                                showToast("データを復元しました！");
-                            };
-                            bgImage.src = bgImageSrc;
-                            return;
-                        } catch(e) { bgImage = null; }
+                        const res = await fetch(data.bgImgDataUrl);
+                        const blob = await res.blob();
+                        bgImageBlobKey = 'bgImage_' + Date.now();
+                        await putToDB(bgImageBlobKey, blob);
+                        bgImageSrc = data.bgImgDataUrl;
+                        bgImage = new Image();
+                        bgImage.onload = function() {
+                            renderGrid();
+                            showToast("データを復元しました！");
+                        };
+                        bgImage.src = bgImageSrc;
+                    } else {
+                        bgImage = null;
+                        bgImageSrc = null;
+                        bgImageBlobKey = null;
+                        renderGrid();
+                        showToast("データを復元しました！");
                     }
-                    
-                    bgImage = null;
-                    bgImageSrc = null;
-                    bgImageBlobKey = null;
-                    renderGrid();
-                    showToast("データを復元しました！");
                 } catch (err) {
                     console.error(err);
                     alert("復元に失敗しました。ファイル形式を確認してください。");
@@ -765,6 +756,7 @@
         input.click();
     };
 
+    // ---------- 画像出力処理 ----------
     function generateFullResolutionCanvas(callback) {
         const stage = document.getElementById('stage-wrapper');
         const stageRect = stage.getBoundingClientRect();
