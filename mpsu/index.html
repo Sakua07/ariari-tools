@@ -627,26 +627,32 @@
         });
     }
 
-    // ---------- 絶対に落とさない完全保護版バックアップ処理 ----------
+    // ---------- 超安全・絶対落ちないバックアップ処理（画像処理でエラーが出ても絶対にダウンロードする） ----------
     document.getElementById('backupButton').onclick = async () => {
+        let pIconDataUrl = '';
+        let bgImgDataUrl = '';
+        
         try {
-            let pIconDataUrl = '';
-            let bgImgDataUrl = '';
+            if (window.dbReadyPromise) await window.dbReadyPromise;
             
-            try {
-                if (window.dbReadyPromise) await window.dbReadyPromise;
-                if (playerIconBlobKey && typeof getFromDB === 'function') {
+            if (playerIconBlobKey && typeof getFromDB === 'function') {
+                try {
                     const blob = await getFromDB(playerIconBlobKey);
                     if (blob) pIconDataUrl = await blobToDataURL(blob);
-                }
-                if (bgImageBlobKey && typeof getFromDB === 'function') {
+                } catch (e) { console.warn("コマ画像のバックアップをスキップします"); }
+            }
+            
+            if (bgImageBlobKey && typeof getFromDB === 'function') {
+                try {
                     const blob = await getFromDB(bgImageBlobKey);
                     if (blob) bgImgDataUrl = await blobToDataURL(blob);
-                }
-            } catch (dbErr) {
-                console.warn("画像データの読み込みをスキップします", dbErr);
+                } catch (e) { console.warn("背景画像のバックアップをスキップします"); }
             }
+        } catch (dbErr) {
+            console.warn("DBデータ読み込みエラーを無視して続行します", dbErr);
+        }
 
+        try {
             const backupObj = {
                 cols, rows, gridData, textData, revealedGrid,
                 startPos, goalPos, currentPos, moveHistory, stepCount,
@@ -672,8 +678,8 @@
             URL.revokeObjectURL(url);
             showToast("バックアップファイルを作成しました！");
         } catch (err) {
-            console.error("バックアップ詳細エラー:", err);
-            alert("バックアップに失敗しました。");
+            console.error("バックアップ保存エラー:", err);
+            alert("バックアップのファイル生成に失敗しました。データ量やメモリ制限を確認してください。");
         }
     };
 
