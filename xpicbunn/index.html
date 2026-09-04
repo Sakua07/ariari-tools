@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像分割保存ツール</title>
+    <style>
+        :root {
+            --primary-color: #ffb7c5; /* 初期：ピンク */
+            --primary-hover: #ffa6b5;
+            --bg-color: #fff9fa;
+            --text-color: #5c4033;
+            --card-bg: #ffffff;
+        }
+
+        body[data-theme="pink"] {
+            --primary-color: #ffb7c5;
+            --primary-hover: #ffa6b5;
+            --bg-color: #fff9fa;
+            --text-color: #5a4045;
+            --card-bg: #ffffff;
+        }
+
+        body[data-theme="green"] {
+            --primary-color: #a3c1ad;
+            --primary-hover: #8fad99;
+            --bg-color: #f7f9f7;
+            --text-color: #3f4e42;
+            --card-bg: #ffffff;
+        }
+
+        body[data-theme="blue"] {
+            --primary-color: #a0c4ff;
+            --primary-hover: #89b4ff;
+            --bg-color: #f0f4f8;
+            --text-color: #2c3e50;
+            --card-bg: #ffffff;
+        }
+
+        body[data-theme="dark"] {
+            --primary-color: #4a5568;
+            --primary-hover: #2d3748;
+            --bg-color: #1a202c;
+            --text-color: #e2e8f0;
+            --card-bg: #2d3748;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: background 0.3s;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .theme-selector select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--primary-color);
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+
+        .drop-zone:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        button.action-btn {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button.action-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .preview-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            background: var(--card-bg);
+        }
+
+        .preview-card canvas {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body data-theme="pink">
+
+    <div class="container">
+        <!-- テーマ変更およびタイトル -->
+        <div class="header-controls">
+            <h1>画像分割保存ツール</h1>
+            <div class="theme-selector">
+                <label for="themeSelect">テーマ：</label>
+                <select id="themeSelect" onchange="changeTheme(this.value)">
+                    <option value="pink">ピンク</option>
+                    <option value="green">緑</option>
+                    <option value="blue">ブルー</option>
+                    <option value="dark">ダーク</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 画像選択エリア -->
+        <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+            <p>ここに画像をドロップするか、クリックしてファイルを選択</p>
+            <p class="info-text">（推奨：縦2376px / 横9504px のPNG画像）</p>
+            <input type="file" id="fileInput" accept="image/png, image/jpeg" style="display: none;" onchange="handleImage(this)">
+        </div>
+
+        <div style="text-align: center;">
+            <button class="action-btn" id="splitBtn" onclick="splitImage()" disabled>画像を読み込んで分割する</button>
+        </div>
+
+        <!-- プレビューと個別保存エリア -->
+        <div id="previewArea" class="preview-container"></div>
+    </div>
+
+    <script>
+        let loadedImage = null;
+
+        // テーマ変更関数
+        function changeTheme(themeName) {
+            document.body.setAttribute('data-theme', themeName);
+        }
+
+        // 画像読み込み処理
+        function handleImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    loadedImage = img;
+                    document.getElementById('splitBtn').disabled = false;
+                    alert(`画像を読み込みました (${img.width}x${img.height}px)\n「画像を読み込んで分割する」ボタンを押してください。`);
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        // 画像分割処理（横に4等分）
+        function splitImage() {
+            if (!loadedImage) return;
+
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = '';
+
+            const srcWidth = loadedImage.width;
+            const srcHeight = loadedImage.height;
+            const cols = 4;
+            const sliceWidth = Math.floor(srcWidth / cols);
+            const sliceHeight = srcHeight;
+
+            for (let i = 0; i < cols; i++) {
+                const canvas = document.createElement('canvas');
+                canvas.width = sliceWidth;
+                canvas.height = sliceHeight;
+                const ctx = canvas.getContext('2d');
+
+                // 左から順番に切り出し
+                ctx.drawImage(
+                    loadedImage, 
+                    i * sliceWidth, 0, sliceWidth, sliceHeight, 
+                    0, 0, sliceWidth, sliceHeight
+                );
+
+                // プレビューカードの作成
+                const card = document.createElement('div');
+                card.className = 'preview-card';
+
+                const cardCanvas = document.createElement('canvas');
+                cardCanvas.width = sliceWidth;
+                cardCanvas.height = sliceHeight;
+                cardCanvas.style.maxHeight = '150px';
+                const cardCtx = cardCanvas.getContext('2d');
+                cardCtx.drawImage(canvas, 0, 0);
+
+                const label = document.createElement('p');
+                label.textContent = `${i + 1}枚目 (${sliceWidth}x${sliceHeight}px)`;
+                label.style.fontSize = '0.85rem';
+
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'action-btn';
+                saveBtn.style.padding = '5px 10px';
+                saveBtn.style.fontSize = '0.85rem';
+                saveBtn.textContent = '保存';
+                
+                // ダウンロード処理
+                saveBtn.onclick = (function(c, index) {
+                    return function() {
+                        const link = document.createElement('a');
+                        link.download = `split_image_${index + 1}.png`;
+                        link.href = c.toDataURL('image/png');
+                        link.click();
+                    }
+                })(canvas, i);
+
+                card.appendChild(cardCanvas);
+                card.appendChild(label);
+                card.appendChild(saveBtn);
+                previewArea.appendChild(card);
+            }
+        }
+    </script>
+</body>
+</html>
