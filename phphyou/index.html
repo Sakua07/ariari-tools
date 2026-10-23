@@ -1,0 +1,276 @@
+ <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>コードのざっくり種類と使い所まとめ</title>
+    <!-- スクショ保存機能のためのライブラリ -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body {
+            padding: 20px;
+            background-color: #fcfcfc;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .btn-area {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        /* スクショボタン */
+        .download-btn {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        .download-btn:hover {
+            background-color: #e03228;
+        }
+        
+        /* 📸 ここから下が丸ごと画像化されます */
+        #table-capture {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        /* タイトルのデザイン */
+        .main-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #111;
+            margin-top: 0;
+            margin-bottom: 5px;
+            border-left: 6px solid #ff3b30;
+            padding-left: 12px;
+        }
+        .sub-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        /* テーブルスタイル */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f5f7fa;
+            color: #333;
+            font-weight: bold;
+        }
+        td:first-child, th:first-child {
+            width: 15%;
+            background-color: #fafdff;
+            font-weight: bold;
+        }
+        /* 各言語の列幅を均等に割り振り (列が増えたので14.1%に調整) */
+        th:not(:first-child), td:not(:first-child) {
+            width: 14.1%;
+        }
+        
+        /* 🔴 PHPの列全体を赤枠で囲む */
+        .highlight-php {
+            border-left: 3px solid #ff3b30 !important;
+            border-right: 3px solid #ff3b30 !important;
+            background-color: #fff9f9;
+        }
+        th.highlight-php {
+            border-top: 3px solid #ff3b30 !important;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        /* 🔴 具体的な使い所の行（最下部）を赤枠で囲む */
+        .highlight-row td {
+            border-top: 3px solid #ff3b30 !important;
+            border-bottom: 3px solid #ff3b30 !important;
+            background-color: #fff9f9;
+        }
+        .highlight-row td:first-child {
+            border-left: 3px solid #ff3b30 !important;
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        .highlight-row td:last-child {
+            border-right: 3px solid #ff3b30 !important;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* 交差点（PHP列 かつ 使い所行） */
+        td.highlight-cross {
+            border: 3px solid #ff3b30 !important;
+            background-color: #ffe5e5 !important;
+            font-weight: bold;
+        }
+        
+        /* バッジ装飾 */
+        .badge-no { background-color: #e4f7e6; color: #1e7e34; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .badge-yes { background-color: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .badge-must { background-color: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .emp { color: #d9383a; font-weight: bold; }
+
+        /* 下部解説エリア */
+        .info-footer {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .update-box {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #d9383a;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="btn-area">
+        <button class="download-btn" onclick="saveTableAsImage()">📸 この内容をまるごと画像保存する</button>
+    </div>
+
+    <!-- ここから画像化される範囲（#table-capture） -->
+    <div id="table-capture">
+        <h1 class="main-title">コードのざっくり種類と使い所まとめ</h1>
+        <p class="sub-title">自社でのデータ管理やWebビジネスに役立つ、IT知識のアップデート表</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>項目 / 言語</th>
+                    <th>HTML</th>
+                    <th>JavaScript</th>
+                    <th>CSS</th>
+                    <th class="highlight-php">PHP</th>
+                    <th>Java</th>
+                    <th>Python / Ruby / Goなど</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>動く場所<br>（サーバー必要？）</td>
+                    <td><span class="badge-no">❌ サーバー不要</span><br>自分のパソコン（ブラウザ）の画面上だけで動く</td>
+                    <td><span class="badge-no">❌ サーバー不要</span><br>自分のパソコン（ブラウザ）の画面上だけで動く</td>
+                    <td><span class="badge-no">❌ サーバー不要</span><br>自分のパソコン（ブラウザ）の画面上だけで動く</td>
+                    <td class="highlight-php"><span class="badge-yes">⚠️ サーバーが必要</span><br><span class="emp">自分のPCを簡易サーバーにするかレンタルサーバーが必要</span></td>
+                    <td><span class="badge-must">⚠️ 専用サーバーが必要</span><br>大がかりなシステム用サーバーが絶対に必要</td>
+                    <td><span class="badge-yes">⚠️ サーバーが必要</span><br>プログラムを動かすためのサーバー環境が必要</td>
+                </tr>
+                <tr>
+                    <td>一言で表すと？</td>
+                    <td>Webページの見た目の骨組み</td>
+                    <td>Web画面をピカピカ動かす演出家</td>
+                    <td>Web画面の色やデザインを整える装飾家</td>
+                    <td class="highlight-php"><span class="emp">Webビジネスの強い味方</span></td>
+                    <td>絶対にバグが許されない<br>堅牢なプロ用</td>
+                    <td>AIやデータ分析、最先端技術に強い</td>
+                </tr>
+                <tr>
+                    <td>パソコンへの<br>導入の難しさ</td>
+                    <td>不要（めちゃ簡単）<br>ファイルをすぐ開ける</td>
+                    <td>不要（めちゃ簡単）<br>ブラウザがあれば動く</td>
+                    <td>不要（めちゃ簡単）<br>ブラウザがあれば動く</td>
+                    <td class="highlight-php">少しステップが必要<br>（ツールで省略可）</td>
+                    <td>かなり大変<br>（設定やルールが多い）</td>
+                    <td>...
+
+```html
+            <tr>
+                <td>レンタルサーバー<br>での動きやすさ</td>
+                <td>どこでも100%動く<br>（一番安くてOK）</td>
+                <td>どこでも100%動く<br>（ユーザーのPC側で動くため）</td>
+                <td>どこでも100%動く<br>（ユーザーのPC側で動くため）</td>
+                <td class="highlight-php">ほぼどこでも動く<br>（格安サーバーでも標準装備）</td>
+                <td>個人向けサーバーでは動かない<br>（専用サーバーが必要）</td>
+                <td>自分で設定しないと動かない<br>（高機能なサーバーが必要）</td>
+            </tr>
+            <tr>
+                <td>企業側が求める<br>ビジネス上の理由</td>
+                <td>ネット上に自社ページを<br>存在させるため（必須）</td>
+                <td>ユーザーが操作しやすい<br>快適な画面を作るため</td>
+                <td>企業のブランドイメージに<br>合った見た目にするため</td>
+                <td class="highlight-php">安く・早くWebサイトを作りたい<br>（維持費安、引き継ぎしやすい）</td>
+                <td>絶対にシステムを止めたくない<br>（セキュリティと安全性が最優先）</td>
+                <td>最先端の技術を導入したい<br>（AI活用や大量のデータ処理）</td>
+            </tr>
+            <tr class="highlight-row">
+                <td>具体的な「使い所」<br>（どんな時に使う？）</td>
+                <td>・企業のホームページ<br>・ブログの文章や画像表示</td>
+                <td>・ポップアップの表示<br>・画像の自動スライド<br>・入力エラーの即時チェック</td>
+                <td>・全体のテーマカラー設定<br>・文字のサイズやフォント変更<br>・〇〇を右寄りに表示する設定</td>
+                <td class="highlight-cross">
+                    ・自社サイトでのデータ管理<br>
+                    ・お問い合わせフォームの受け取り<br>
+                    ・WordPressのカスタマイズ<br>
+                    ・ネットショップ（ECサイト）
+                </td>
+                <td>・銀行のオンラインシステム<br>・クレジットカード決済<br>・大企業の社内インフラ<br>・Androidアプリ</td>
+                <td>・AI（人工知能）の開発<br>・ビッグデータの分析<br>・日々の面倒な作業の自動化<br>・Webサービス開発</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 💡 最下部のメッセージ（スクショに入ります） -->
+    <div class="info-footer">
+        <div class="update-box">
+            🍎 コードはPCに指示を出す『言葉』のこと！<br>
+            「こんなサイトを作って」「〇〇を右寄りに表示して」という指示を、英語や日本語などで伝えるイメージです！HTML語、CSS語(でもそれぞれにできるできない指示や得意な指示、不得意な指示がある、サイトを作る時はコードを使いPCに順序立てて指示する必要があるんだ)<br>
+            これは今の小学生や中学生が当たり前に学んでいること！知らない人は今すぐ知識をアップデート（更新）！
+        </div>
+<h1>まとめ</h1>
+
+<p>1. PHPは、自社サイトのデータ管理やサーバー機能（お問い合わせフォーム等）を、初心者でも企業でも安く・早く作れる便利な技術。
+</p>
+<p>
+2. だからこそ、今回のPHP事件（PHP2Shell）のように「サーバーの弱点」を突かれると、企業の重要データが丸見えになる危険がある。
+</p>
+<p>
+3. 今回は、修正することがバレてしまったことで弱点を直すプログラムが配られた瞬間、攻撃者がAIを使って「以前のコードとの違い」を瞬時に見抜き、すぐさま攻撃を開始できることで世界中が大慌てになった。
+つまり、「便利で広く使われやすいサーバー用技術だからこそ狙われ、AIの進化によって弱点を見つけてから攻撃されるまでのスピードが異次元に早くなった事で起きた事件」
+</p>
+    </div>
+</div>
+</div>
+
+<script>
+    function saveTableAsImage() {
+        const target = document.getElementById("table-capture");
+        html2canvas(target, { scale: 2 }).then(canvas => {
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = "code_types_and_usecases.png";
+            link.click();
+        });
+    }
+</script>
+
+</body>
+</html>
