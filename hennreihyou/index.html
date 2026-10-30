@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クリエイティブ・グッズ一覧</title>
+    <!-- 画面キャプチャ用ライブラリ (html2canvas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .app-title-input {
+            font-size: 1.25rem;
+            font-weight: bold;
+            border: 1px solid transparent;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: transparent;
+        }
+        .app-title-input:hover, .app-title-input:focus {
+            border-color: var(--border-color);
+            background: #fff;
+            outline: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active, .nav-btn:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        .guide-box {
+            background: #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .category-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .category-container.dragging {
+            opacity: 0.4;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .category-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .category-name-input {
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: 1px solid var(--border-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            width: 220px;
+            background: #fff;
+        }
+
+        .category-header-text-input {
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            width: 220px;
+            background: #fafafa;
+        }
+        .category-header-text-input:focus, .category-name-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        /* 1. 縦長レイアウト (デフォルトグリッド) */
+        .items-grid.layout-vertical {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .items-grid.layout-vertical .item-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            position: relative;
+        }
+        .items-grid.layout-vertical .item-image-wrapper {
+            width: 100%;
+            height: 130px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* 2. 横長レイアウト (リスト風) */
+        .items-grid.layout-horizontal {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .items-grid.layout-horizontal .item-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+        .items-grid.layout-horizontal .item-image-wrapper {
+            width: 80px;
+            height: 60px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        /* 3. ワイドヘッダーサイズレイアウト */
+        .items-grid.layout-iriam {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .items-grid.layout-iriam .item-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+        }
+        .items-grid.layout-iriam .item-image-wrapper {
+            width: 100%;
+            height: 90px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* 4. 新規作成（カスタム）レイアウト */
+        .items-grid.layout-custom {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+        .items-grid.layout-custom .item-card {
+            background: #fff;
+            border: 2px dashed var(--primary-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+        }
+        .items-grid.layout-custom .item-image-wrapper {
+            width: 100%;
+            height: 110px;
+            background: #eef2ff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .item-card.dragging {
+            opacity: 0.4;
+        }
+
+        .item-image-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .item-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        .items-grid.layout-horizontal .item-badge {
+            position: static;
+            white-space: nowrap;
+        }
+
+        .item-text-input {
+            width: 100%;
+            padding: 0.3rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+        .item-text-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--primary-color);
+            background: #eef2ff;
+            padding: 2.5rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+        }
+        .drop-zone:hover {
+            background: #e0e7ff;
+        }
+
+        .drag-handle {
+            font-size: 1.2rem;
+            color: #64748b;
+            cursor: grab;
+            user-select: none;
+            padding: 0 0.25rem;
+            touch-action: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .settings-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <input type="text" id="appTitle" class="app-title-input" value="クリエイティブ一覧">
+        </div>
+        <nav class="nav-menu">
+            <button class="nav-btn active" onclick="switchView('insert')">画像を挿入</button>
+            <button class="nav-btn" onclick="switchView('edit')">編集・保存</button>
+            <button class="nav-btn" onclick="switchView('preview')">プレビュー</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 1. 画像挿入画面 -->
+        <section id="view-insert" class="view-section active">
+            <div class="guide-box">
+                操作方法: 中央のエリアをクリックして画像ファイルを選択するか、画像を直接ドラッグ＆ドロップして追加してください。同じピクセルサイズの画像同士が自動で同じカテゴリ（グループ）にまとめられます。
+            </div>
+            <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+                <h3>ここに画像をドラッグ＆ドロップ、またはクリックして追加</h3>
+                <p>複数選択してまとめて入れることも可能です</p>
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFiles(this.files)">
+            </div>
+            <div id="quickPreview" class="items-grid layout-vertical"></div>
+        </section>
+
+        <!-- 2. 画像を編集・保存画面 -->
+        <section id="view-edit" class="view-section">
+            <div class="guide-box">
+                操作方法: 自動生成されたカテゴリ名の変更や小見出し横のテキスト追加、画像下の名称編集ができます。<br>
+                ・<strong>カテゴリの並び替え</strong>: カテゴリタイトルの左側にあるハンバーガーメニュー（三本線）をドラッグして上下に移動できます。<br>
+                ・<strong>カードの並び替え</strong>: 各カード内にあるハンバーガーメニューをドラッグして、カテゴリ内の順番を入れ替えられます。
+            </div>
+            <div class="toolbar">
+                <h2>編集と自動保存</h2>
+                <div class="settings-group">
+                    <div>
+                        <label>表示設定: </label>
+                        <select id="editDisplayMode" onchange="renderEditView()">
+                            <option value="default">カテゴリ名＋アルファベット</option>
+                            <option value="filename">画像名＋アルファベット</option>
+                            <option value="alpha-only">アルファベットのみ</option>
+                            <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="saveAsImage('editExportArea', false)">画像を保存</button>
+                    <button class="btn" onclick="saveAsImage('editExportArea', true)">背景を透過して保存</button>
+                </div>
+            </div>
+            <div id="editExportArea" style="padding: 10px; border-radius: 8px;">
+                <div id="editContainer"></div>
+            </div>
+        </section>
+
+        <!-- 3. プレビュー画面 -->
+        <section id="view-preview" class="view-section">
+            <div class="guide-box">
+                操作方法: 完成した一覧のプレビューです。「レイアウト」で表全体の並び方（縦長・横長・ワイドヘッダーなど）を変更できます。「画像を保存」「背景を透過して保存」ボタンからダウンロード可能です。
+            </div>
+            <div class="toolbar">
+                <h2>完成プレビュー</h2>
+                <div class="settings-group">
+                    <div>
+                        <label>表示設定: </label>
+                        <select id="previewDisplayMode" onchange="renderPreviewView()">
+                            <option value="default">カテゴリ名＋アルファベット</option>
+                            <option value="filename">画像名＋アルファベット</option>
+                            <option value="alpha-only">アルファベットのみ</option>
+                            <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>レイアウト: </label>
+                        <select id="layoutMode" onchange="renderPreviewView()">
+                            <option value="vertical">縦長 (グリッド)</option>
+                            <option value="horizontal">横長 (リスト風)</option>
+                            <option value="iriam">ワイドヘッダーサイズ</option>
+                            <option value="custom">新規作成 (カスタム)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>背景色: </label>
+                        <select id="bgColorPicker" onchange="changeBackgroundColor()">
+                            <option value="#f8fafc">デフォルト (グレー)</option>
+                            <option value="#ffffff">白</option>
+                            <option value="#0f172a">黒 (ダーク)</option>
+                            <option value="#fdf2f8">ピンク</option>
+                            <option value="#eff6ff">ブルー</option>
+                            <option value="#f5f3ff">パープル</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="saveAsImage('previewExportArea', false)">画像を保存</button>
+                    <button class="btn" onclick="saveAsImage('previewExportArea', true)">背景を透過して保存</button>
+                </div>
+            </div>
+            <div id="previewExportArea" style="padding: 10px; border-radius: 8px;">
+                <h2 id="previewAppTitle" style="text-align: center; margin-bottom: 1.5rem;">クリエイティブ一覧</h2>
+                <div id="previewContainer"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let categoriesMap = {}; // { sizeKey: { id, name, width, height } }
+        let categoryOrder = []; // カテゴリIDの並び順配列
+        let items = [];
+        let categoryHeaderTexts = {}; 
+        let customCategoryNames = {}; 
+
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            if (viewName === 'edit') renderEditView();
+            if (viewName === 'preview') renderPreviewView();
+        }
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const width = img.width;
+                        const height = img.height;
+                        const sizeKey = `${width}x${height}`; 
+
+                        if (!categoriesMap[sizeKey]) {
+                            categoriesMap[sizeKey] = {
+                                id: sizeKey,
+                                name: customCategoryNames[sizeKey] || `${width} × ${height}px`,
+                                width: width,
+                                height: height
+                            };
+                            if (!categoryOrder.includes(sizeKey)) {
+                                categoryOrder.push(sizeKey);
+                            }
+                        }
+
+                        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                        
+                        items.push({
+                            id: '_' + Math.random().toString(36).substr(2, 9),
+                            src: e.target.result,
+                            fileName: cleanName,
+                            text: cleanName,
+                            category: sizeKey
+                        });
+                        renderInsertQuickView();
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function getAlphabetLabel(index) {
+            let label = '';
+            index++;
+            while (index > 0) {
+                index--;
+                label = String.fromCharCode(65 + (index % 26)) + label;
+                index = Math.floor(index / 26);
+            }
+            return label;
+        }
+
+        function getActiveCategories() {
+            const activeCategoryIds = [...new Set(items.map(item => item.category))];
+            // categoryOrderの順序を維持しつつ、アクティブなものを返す。新規で追加されたものがあれば末尾に足す
+            activeCategoryIds.forEach(id => {
+                if (!categoryOrder.includes(id)) {
+                    categoryOrder.push(id);
+                }
+            });
+            return categoryOrder.map(id => categoriesMap[id]).filter(cat => cat && activeCategoryIds.includes(cat.id));
+        }
+
+        function getItemBadgeText(item, catIndex, mode) {
+            const alpha = getAlphabetLabel(catIndex);
+            const catObj = categoriesMap[item.category];
+            const catName = catObj ? catObj.name : 'カテゴリ';
+
+            if (mode === 'filename') {
+                return `${item.fileName} ${alpha}`;
+            } else if (mode === 'alpha-only') {
+                return `${alpha}`;
+            } else {
+                return `${catName} ${alpha}`;
+            }
+        }
+
+        function changeBackgroundColor() {
+            const color = document.getElementById('bgColorPicker').value;
+            document.body.style.backgroundColor = color;
+        }
+
+        function updateCategoryHeaderContent(catId, val) {
+            categoryHeaderTexts[catId] = val;
+        }
+
+        function updateCategoryName(catId, newName) {
+            customCategoryNames[catId] = newName;
+            if (categoriesMap[catId]) {
+                categoriesMap[catId].name = newName;
+            }
+        }
+
+        function updateCategory(id, newCat) {
+            const target = items.find(i => i.id === id);
+            if (target) target.category = newCat;
+            renderEditView();
+        }
+
+        function removeItem(id) {
+            items = items.filter(i => i.id !== id);
+            renderInsertQuickView();
+            renderEditView();
+        }
+
+        function renderEditView() {
+            const container = document.getElementById('editContainer');
+            container.innerHTML = '';
+            const mode = document.getElementById('editDisplayMode').value;
+            const activeCategories = getActiveCategories();
+
+            activeCategories.forEach(cat => {
+                const catItems = items.filter(item => item.category === cat.id);
+                const headerText = categoryHeaderTexts[cat.id] || '';
+                if (catItems.length === 0 && !headerText) return;
+
+                const catDiv = document.createElement('div');
+                catDiv.className = 'category-container';
+                catDiv.setAttribute('draggable', 'true');
+                catDiv.setAttribute('data-cat-id', cat.id);
+                catDiv.addEventListener('dragstart', onCategoryDragStart);
+                catDiv.addEventListener('dragover', onCategoryDragOver);
+                catDiv.addEventListener('drop', onCategoryDrop);
+                catDiv.addEventListener('dragend', onCategoryDragEnd);
+                
+                let headerHtml = `
+                    <div class="category-header">
+                        <div class="category-header-left">
+                            <span class="drag-handle" title="ドラッグしてカテゴリを移動">≡</span>
+                            <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)" placeholder="カテゴリ名">
+                            <input type="text" class="category-header-text-input" value="${headerText}" oninput="updateCategoryHeaderContent('${cat.id}', this.value)" placeholder="小見出しの横テキスト (任意)">
+                        </div>
+                        <span>全 ${catItems.length} 件</span>
+                    </div>
+                    <div class="items-grid layout-vertical" data-category-grid="${cat.id}">
+                `;
+
+                let gridHtml = '';
+                catItems.forEach((item, index) => {
+                    const badgeText = getItemBadgeText(item, index, mode);
+                    const showInput = (mode !== 'hide-text');
+
+                    gridHtml += `
+                        <div class="item-card" draggable="true" data-item-id="${item.id}" ondragstart="onItemDragStart(event)" ondragover="onItemDragOver(event)" ondrop="onItemDrop(event)" ondragend="onItemDragEnd(event)">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                                <span class="drag-handle" title="ドラッグしてカードを移動">≡</span>
+                                <button class="btn btn-danger" style="padding: 2px 6px; font-size: 0.7rem;" onclick="removeItem('${item.id}')">削除</button>
+                            </div>
+                            <div class="item-badge">${badgeText}</div>
+                            <div class="item-image-wrapper">
+                                <img src="${item.src}" alt="${item.text}">
+                            </div>
+                            ${showInput ? `<input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)">` : ''}
+                            <select onchange="updateCategory('${item.id}', this.value)" style="font-size:0.8rem; padding:2px;">
+                                ${activeCategories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                });
+
+                gridHtml += `</div>`;
+                catDiv.innerHTML = headerHtml + gridHtml;
+                container.appendChild(catDiv);
+            });
+        }
+
+        function renderPreviewView() {
+            document.getElementById('previewAppTitle').innerText = document.getElementById('appTitle').value;
+            const layout = document.getElementById('layoutMode').value;
+            
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+            const mode = document.getElementById('previewDisplayMode').value;
+            let gridClass = 'items-grid layout-vertical';
+            if (layout === 'horizontal') gridClass = 'items-grid layout-horizontal';
+            if (layout === 'iriam') gridClass = 'items-grid layout-iriam';
+            if (layout === 'custom') gridClass = 'items-grid layout-custom';
+
+            const activeCategories = getActiveCategories();
+
+            activeCategories.forEach(cat => {
+                const catItems = items.filter(item => item.category === cat.id);
+                const headerText = categoryHeaderTexts[cat.id] || '';
+                if (catItems.length === 0 && !headerText) return;
+
+                const catDiv = document.createElement('div');
+                catDiv.className = 'category-container';
+                
+                let headerHtml = `
+                    <div class="category-header">
+                        <div class="category-header-left">
+                            <h3 style="margin:0;">${cat.name}</h3>
+                            ${headerText ? `<span style="font-size:0.95rem; font-weight:bold;">${headerText}</span>` : ''}
+                        </div>
+                        <span>全 ${catItems.length} 件</span>
+                    </div>
+                    <div class="${gridClass}">
+                `;
+
+                let gridHtml = '';
+                catItems.forEach((item, index) => {
+                    const badgeText = getItemBadgeText(item, index, mode);
+                    const showText = (mode !== 'hide-text');
+
+                    if (layout === 'horizontal') {
+                        gridHtml += `
+                            <div class="item-card">
+                                <div class="item-image-wrapper">
+                                    <img src="${item.src}" alt="${item.text}">
+                                </div>
+                                <div class="item-badge">${badgeText}</div>
+                                ${showText ? `<div style="font-size:0.9rem; font-weight:500; flex:1;">${item.text || '（説明なし）'}</div>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        gridHtml += `
+                            <div class="item-card">
+                                <div class="item-badge">${badgeText}</div>
+                                <div class="item-image-wrapper">
+                                    <img src="${item.src}" alt="${item.text}">
+                                </div>
+                                ${showText ? `<div style="font-size:0.85rem; font-weight:500; text-align:center;">${item.text || '（説明なし）'}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+
+                gridHtml += `</div>`;
+                catDiv.innerHTML = headerHtml + gridHtml;
+                container.appendChild(catDiv);
+            });
+        }
+
+        function renderInsertQuickView() {
+            const grid = document.getElementById('quickPreview');
+            grid.innerHTML = items.map(item => {
+                return `
+                    <div class="item-card">
+                        <div class="item-image-wrapper"><img src="${item.src}"></div>
+                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)">
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateText(id, val) {
+            const target = items.find(i => i.id === id);
+            if (target) target.text = val;
+        }
+
+        // ドラッグ＆ドロップ（カテゴリ単位）
+        let draggedCatId = null;
+
+        function onCategoryDragStart(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+            draggedCatId = e.currentTarget.getAttribute('data-cat-id');
+            e.currentTarget.classList.add('dragging');
+            e.stopPropagation();
+        }
+
+        function onCategoryDragOver(e) {
+            e.preventDefault();
+        }
+
+        function onCategoryDrop(e) {
+            e.preventDefault();
+            const targetCatContainer = e.target.closest('.category-container');
+            if (!targetCatContainer) return;
+            const targetCatId = targetCatContainer.getAttribute('data-cat-id');
+            if (!draggedCatId || draggedCatId === targetCatId) return;
+
+            const fromIndex = categoryOrder.indexOf(draggedCatId);
+            const toIndex = categoryOrder.indexOf(targetCatId);
+
+            if (fromIndex !== -1 && toIndex !== -1) {
+                categoryOrder.splice(fromIndex, 1);
+                categoryOrder.splice(toIndex, 0, draggedCatId);
+                renderEditView();
+            }
+        }
+
+        function onCategoryDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedCatId = null;
+        }
+
+        // ドラッグ＆ドロップ（カテゴリ内カード単位）
+        let draggedItemId = null;
+
+        function onItemDragStart(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+            draggedItemId = e.currentTarget.getAttribute('data-item-id');
+            e.currentTarget.classList.add('dragging');
+            e.stopPropagation();
+        }
+
+        function onItemDragOver(e) {
+            e.preventDefault();
+        }
+
+        function onItemDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetCard = e.target.closest('.item-card');
+            if (!targetCard) return;
+            const targetItemId = targetCard.getAttribute('data-item-id');
+            if (!draggedItemId || draggedItemId === targetItemId) return;
+
+            const draggedItem = items.find(i => i.id === draggedItemId);
+            const targetItem = items.find(i => i.id === targetItemId);
+
+            if (!draggedItem || !targetItem) return;
+
+            // 同じカテゴリ内での並び替え、または別カテゴリへのドロップ対応
+            draggedItem.category = targetItem.category;
+
+            const fromIndex = items.findIndex(i => i.id === draggedItemId);
+            const toIndex = items.findIndex(i => i.id === targetItemId);
+
+            if (fromIndex !== -1 && toIndex !== -1) {
+                items.splice(fromIndex, 1);
+                const newToIndex = items.findIndex(i => i.id === targetItemId);
+                items.splice(newToIndex, 0, draggedItem);
+                renderEditView();
+            }
+        }
+
+        function onItemDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedItemId = null;
+        }
+
+        function saveAsImage(containerId, isTransparent) {
+            const targetElement = document.getElementById(containerId);
+            html2canvas(targetElement, {
+                backgroundColor: isTransparent ? null : (document.body.style.backgroundColor || '#f8fafc'),
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = isTransparent ? 'creative-catalog-transparent.png' : 'creative-catalog.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
+
