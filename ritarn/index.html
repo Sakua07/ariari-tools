@@ -112,6 +112,16 @@
             margin-bottom: 1rem;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 0.5rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .category-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            flex-wrap: wrap;
         }
 
         .category-name-input {
@@ -320,7 +330,7 @@
             cursor: grab;
             user-select: none;
             padding: 0 0.25rem;
-            touch-action: none; /* タッチ操作でのスムーズなドラッグ用 */
+            touch-action: none;
         }
         .drag-handle:active {
             cursor: grabbing;
@@ -418,12 +428,19 @@
         <!-- 3. 画像を編集・保存画面 -->
         <section id="view-edit" class="view-section">
             <div class="guide-box">
-                操作方法: 切り替えボタンで「テキスト編集モード」と「画像位置変更モード」を切り替えられます。「テキストを追加」ボタンで自由な説明文行を追加できます。「画像を保存」「背景を透過して保存」ボタンから画像をダウンロードできます。
+                操作方法: 切り替えボタンで「テキスト編集モード」と「画像位置変更モード」を切り替えられます。「テキスト追加位置」を選んでから「テキストを追加」ボタンを押すと、小見出しの横、またはアルファベットなし（アルファベットの下）に自由な説明文行を追加できます。
             </div>
             <div class="toolbar">
                 <h2>編集と自動保存</h2>
                 <div class="settings-group">
                     <button class="btn" id="editModeToggleBtn" onclick="toggleEditMode()">画像の位置変更に切り替える</button>
+                    <div>
+                        <label>テキスト追加位置: </label>
+                        <select id="textAddPositionMode">
+                            <option value="header">小見出しの横</option>
+                            <option value="below-alpha">アルファベットなし（アルファベットの下）</option>
+                        </select>
+                    </div>
                     <button class="btn" onclick="addTextOnlyItem()">テキストを追加</button>
                     <div>
                         <label>表示名: </label>
@@ -528,7 +545,8 @@
                             fileName: file.name.replace(/\.[^/.]+$/, ""),
                             text: file.name.replace(/\.[^/.]+$/, ""),
                             category: categoryId,
-                            isTextOnly: false
+                            isTextOnly: false,
+                            textPosition: 'below-alpha' // デフォルトはアルファベットの下
                         });
                         renderInsertQuickView();
                     }
@@ -539,13 +557,16 @@
         }
 
         function addTextOnlyItem() {
+            const positionChoice = document.getElementById('textAddPositionMode').value;
+            // 小見出しの横に置く場合は最初のカテゴリ、アルファベットの下の場合はどのカテゴリでも可（今回は代表として最初のカテゴリまたは指定カテゴリ）
             items.push({
                 id: '_' + Math.random().toString(36).substr(2, 9),
                 src: '',
                 fileName: 'テキストメモ',
                 text: '新しいテキストメモ',
                 category: categories[0].id,
-                isTextOnly: true
+                isTextOnly: true,
+                textPosition: positionChoice // 'header' または 'below-alpha'
             });
             if (isEditPositionMode) renderEditPositionView();
             else renderEditView();
@@ -553,11 +574,11 @@
 
         function determineCategory(ratio, w, h) {
             if (Math.abs(ratio - 1) < 0.05) return 'icon-ring';
-            if (Math.abs(ratio - 3.17) < 0.3) return 'iriam-header';
-            if (Math.abs(ratio - 3.0) < 0.2) return 'x-header';
+            if (ratio >= 2.7) return 'x-header'; // Xヘッダー（超横長）
+            if (ratio >= 2.0 && ratio < 2.7) return 'iriam-header'; // IRIAMヘッダー
             if (ratio < 0.6 && ratio > 0.45) return 'phone-bg';
             if (ratio <= 0.45) return 'simeji-bg';
-            if (ratio > 1.5 && ratio < 2.2) return 'pc-wallpaper';
+            if (ratio > 1.5 && ratio < 2.0) return 'pc-wallpaper';
             return 'real-goods';
         }
 
@@ -579,7 +600,7 @@
             } else {
                 const catObj = categories.find(c => c.id === item.category);
                 const catName = catObj ? catObj.name : 'アイテム';
-                return `${catName}${alpha}`;
+                return `${catName} ${alpha}`;
             }
         }
 
@@ -604,25 +625,49 @@
                 const catDiv = document.createElement('div');
                 catDiv.className = 'category-container';
                 
-                let html = `
+                // 小見出しの横に追加するテキストアイテムをここで抽出・表示できるようにする
+                const headerTextItems = catItems.filter(item => item.isTextOnly && item.textPosition === 'header');
+                const normalItems = catItems.filter(item => !item.isTextOnly || item.textPosition === 'below-alpha');
+
+                let headerHtml = `
                     <div class="category-header">
-                        <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)">
+                        <div class="category-header-left">
+                            <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)">
+                `;
+                
+                // 小見出しの横に追加されたテキスト
+                headerTextItems.forEach(item => {
+                    headerHtml += `
+                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="width: 200px; font-weight: bold;" placeholder="テキスト入力">
+                    `;
+                });
+
+                headerHtml += `
+                        </div>
                         <span>全 ${catItems.length} 件</span>
                     </div>
-                    <div class="${gridClass}">
                 `;
 
-                catItems.forEach((item, index) => {
-                    const badgeText = getItemBadgeText(item, index, mode);
+                let gridHtml = `<div class="${gridClass}">`;
+
+                // アルファベットの下などに表示する通常アイテム＋テキストアイテム
+                let normalIndex = 0;
+                catItems.forEach((item) => {
+                    if (item.isTextOnly && item.textPosition === 'header') return; // 小見出し横用は除外
+
+                    // アルファベット付与対象は画像、または「アルファベットの下」に設定されたテキスト
+                    const badgeText = getItemBadgeText(item, normalIndex, mode);
+                    normalIndex++;
+
                     if (item.isTextOnly) {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-badge">${badgeText}</div>
                                 <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="margin-top: 1.5rem; font-weight: bold;">
                             </div>
                         `;
                     } else if (layout === 'horizontal') {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-image-wrapper">
                                     <img src="${item.src}" alt="${item.text}">
@@ -632,7 +677,7 @@
                             </div>
                         `;
                     } else {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-badge">${badgeText}</div>
                                 <div class="item-image-wrapper">
@@ -644,8 +689,8 @@
                     }
                 });
 
-                html += `</div>`;
-                catDiv.innerHTML = html;
+                gridHtml += `</div>`;
+                catDiv.innerHTML = headerHtml + gridHtml;
                 container.appendChild(catDiv);
             });
         }
@@ -674,25 +719,44 @@
                 const catDiv = document.createElement('div');
                 catDiv.className = 'category-container';
                 
-                let html = `
+                const headerTextItems = catItems.filter(item => item.isTextOnly && item.textPosition === 'header');
+
+                let headerHtml = `
                     <div class="category-header">
-                        <h3 style="margin:0;">${cat.name}</h3>
-                        <span>全 ${catItems.length} 件</span>
-                    </div>
-                    <div class="${gridClass}">
+                        <div class="category-header-left">
+                            <h3 style="margin:0;">${cat.name}</h3>
                 `;
 
-                catItems.forEach((item, index) => {
-                    const badgeText = getItemBadgeText(item, index, mode);
+                headerTextItems.forEach(item => {
+                    headerHtml += `
+                        <span style="font-size:0.95rem; font-weight:bold;">${item.text || '（テキストなし）'}</span>
+                    `;
+                });
+
+                headerHtml += `
+                        </div>
+                        <span>全 ${catItems.length} 件</span>
+                    </div>
+                `;
+
+                let gridHtml = `<div class="${gridClass}">`;
+
+                let normalIndex = 0;
+                catItems.forEach((item) => {
+                    if (item.isTextOnly && item.textPosition === 'header') return;
+
+                    const badgeText = getItemBadgeText(item, normalIndex, mode);
+                    normalIndex++;
+
                     if (item.isTextOnly) {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-badge">${badgeText}</div>
                                 <div style="font-size:0.9rem; font-weight:bold; margin-top: 1.5rem;">${item.text || '（テキストなし）'}</div>
                             </div>
                         `;
                     } else if (layout === 'horizontal') {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-image-wrapper">
                                     <img src="${item.src}" alt="${item.text}">
@@ -702,7 +766,7 @@
                             </div>
                         `;
                     } else {
-                        html += `
+                        gridHtml += `
                             <div class="item-card">
                                 <div class="item-badge">${badgeText}</div>
                                 <div class="item-image-wrapper">
@@ -714,8 +778,8 @@
                     }
                 });
 
-                html += `</div>`;
-                catDiv.innerHTML = html;
+                gridHtml += `</div>`;
+                catDiv.innerHTML = headerHtml + gridHtml;
                 container.appendChild(catDiv);
             });
         }
@@ -763,14 +827,14 @@
             const mode = document.getElementById('editDisplayMode').value;
 
             container.innerHTML = `<div class="sortable-list" id="sortableEditList">` + items.map((item, idx) => {
-                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
+                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category && !(i.isTextOnly && i.textPosition === 'header')).length;
                 const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
 
                 return `
                     <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
                         <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
                         ${item.isTextOnly ? '<div style="width:35px; text-align:center; font-size:12px; background:#e2e8f0; border-radius:4px;">TXT</div>' : `<img src="${item.src}">`}
-                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
+                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${item.isTextOnly && item.textPosition === 'header' ? '小見出し横' : badgeText}</span>
                         <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
                         <select onchange="updateCategory('${item.id}', this.value)">
                             ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
@@ -786,14 +850,14 @@
             const mode = document.getElementById('sortDisplayMode').value;
 
             list.innerHTML = items.map((item, idx) => {
-                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
+                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category && !(i.isTextOnly && i.textPosition === 'header')).length;
                 const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
 
                 return `
                     <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
                         <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
                         ${item.isTextOnly ? '<div style="width:35px; text-align:center; font-size:12px; background:#e2e8f0; border-radius:4px;">TXT</div>' : `<img src="${item.src}">`}
-                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
+                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${item.isTextOnly && item.textPosition === 'header' ? '小見出し横' : badgeText}</span>
                         <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
                         <select onchange="updateCategory('${item.id}', this.value)">
                             ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
