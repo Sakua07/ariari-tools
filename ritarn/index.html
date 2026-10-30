@@ -105,6 +105,10 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
+        .category-container.dragging {
+            opacity: 0.4;
+        }
+
         .category-header {
             display: flex;
             justify-content: space-between;
@@ -127,13 +131,27 @@
         .category-name-input {
             font-size: 1.1rem;
             font-weight: bold;
-            border: 1px solid transparent;
+            border: 1px solid var(--border-color);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
-            width: 250px;
+            width: 200px;
+            background: #fff;
         }
         .category-name-input:hover, .category-name-input:focus {
-            border-color: var(--border-color);
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .category-header-text-input {
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            width: 250px;
+            background: #fafafa;
+        }
+        .category-header-text-input:focus {
+            border-color: var(--primary-color);
             background: #fff;
             outline: none;
         }
@@ -154,6 +172,10 @@
             flex-direction: column;
             gap: 0.4rem;
             position: relative;
+        }
+
+        .items-grid.layout-vertical .item-card.dragging {
+            opacity: 0.4;
         }
 
         .items-grid.layout-vertical .item-image-wrapper {
@@ -183,6 +205,10 @@
             align-items: center;
             gap: 1rem;
             position: relative;
+        }
+
+        .items-grid.layout-horizontal .item-card.dragging {
+            opacity: 0.4;
         }
 
         .items-grid.layout-horizontal .item-image-wrapper {
@@ -215,6 +241,10 @@
             position: relative;
         }
 
+        .items-grid.layout-iriam .item-card.dragging {
+            opacity: 0.4;
+        }
+
         .items-grid.layout-iriam .item-image-wrapper {
             width: 100%;
             height: 90px;
@@ -242,6 +272,10 @@
             flex-direction: column;
             gap: 0.5rem;
             position: relative;
+        }
+
+        .items-grid.layout-custom .item-card.dragging {
+            opacity: 0.4;
         }
 
         .items-grid.layout-custom .item-image-wrapper {
@@ -387,7 +421,6 @@
         </div>
         <nav class="nav-menu">
             <button class="nav-btn active" onclick="switchView('insert')">画像を挿入</button>
-            <button class="nav-btn" onclick="switchView('sort')">並び替え</button>
             <button class="nav-btn" onclick="switchView('edit')">編集・保存</button>
             <button class="nav-btn" onclick="switchView('preview')">プレビュー</button>
         </nav>
@@ -407,46 +440,24 @@
             <div id="quickPreview" class="items-grid layout-vertical"></div>
         </section>
 
-        <!-- 2. 並び替え画面 -->
-        <section id="view-sort" class="view-section">
-            <div class="guide-box">
-                操作方法: 左端のハンバーガーメニュー（三本線）を押しそのままドラッグして上下に動かすことで、順番を入れ替えられます。
-            </div>
-            <div class="toolbar">
-                <h2>並び替え・カテゴリ変更</h2>
-                <div>
-                    <label>表示名切替: </label>
-                    <select id="sortDisplayMode" onchange="renderSortView()">
-                        <option value="default">判定名＋アルファベット</option>
-                        <option value="filename">画像名＋アルファベット</option>
-                    </select>
-                </div>
-            </div>
-            <div id="sortableList" class="sortable-list"></div>
-        </section>
-
-        <!-- 3. 画像を編集・保存画面 -->
+        <!-- 2. 画像を編集・保存画面 -->
         <section id="view-edit" class="view-section">
             <div class="guide-box">
-                操作方法: 切り替えボタンで「テキスト編集モード」と「画像位置変更モード」を切り替えられます。「テキスト追加位置」を選んでから「テキストを追加」ボタンを押すと、小見出しの横、またはアルファベットなし（アルファベットの下）に自由な説明文行を追加できます。
+                操作方法: 
+                <br>・<strong>カテゴリ自体の並び替え</strong>: 各カテゴリタイトルの左側にある「≡」を掴んで上下にドラッグ＆ドロップします。
+                <br>・<strong>カテゴリー内のカード並び替え</strong>: 通常編集時の各カード内にある「≡」を掴んで、同じカテゴリー内や別のカテゴリー内へドラッグ＆ドロップして並び替えられます。
+                <br>・<strong>リスト形式での変更</strong>: 「画像の位置変更に切り替える」ボタンを押すと、リスト形式で一括して順番や所属カテゴリを変更することもできます。
             </div>
             <div class="toolbar">
                 <h2>編集と自動保存</h2>
                 <div class="settings-group">
                     <button class="btn" id="editModeToggleBtn" onclick="toggleEditMode()">画像の位置変更に切り替える</button>
                     <div>
-                        <label>テキスト追加位置: </label>
-                        <select id="textAddPositionMode">
-                            <option value="header">小見出しの横</option>
-                            <option value="below-alpha">アルファベットなし（アルファベットの下）</option>
-                        </select>
-                    </div>
-                    <button class="btn" onclick="addTextOnlyItem()">テキストを追加</button>
-                    <div>
-                        <label>表示名: </label>
+                        <label>表示設定: </label>
                         <select id="editDisplayMode" onchange="renderEditView()">
                             <option value="default">判定名＋アルファベット</option>
                             <option value="filename">画像名＋アルファベット</option>
+                            <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
                         </select>
                     </div>
                     <button class="btn" onclick="saveAsImage('editExportArea', false)">画像を保存</button>
@@ -458,19 +469,20 @@
             </div>
         </section>
 
-        <!-- 4. プレビュー画面 -->
+        <!-- 3. プレビュー画面 -->
         <section id="view-preview" class="view-section">
             <div class="guide-box">
-                操作方法: 完成した一覧のプレビューです。「表示名」で判定名ベースか画像名ベースかを選べます。「レイアウト」で縦長・横長の他に「IRIAMヘッダーサイズ」や「新規作成」を選べます。「画像を保存」「背景を透過して保存」ボタンからダウンロードできます。
+                操作方法: 完成した一覧のプレビューです。「表示設定」や「レイアウト」を変更して調整できます。「画像を保存」「背景を透過して保存」ボタンからダウンロード可能です。
             </div>
             <div class="toolbar">
                 <h2>完成プレビュー</h2>
                 <div class="settings-group">
                     <div>
-                        <label>表示名: </label>
+                        <label>表示設定: </label>
                         <select id="previewDisplayMode" onchange="renderPreviewView()">
                             <option value="default">判定名＋アルファベット</option>
                             <option value="filename">画像名＋アルファベット</option>
+                            <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
                         </select>
                     </div>
                     <div>
@@ -505,7 +517,7 @@
     </main>
 
     <script>
-        const categories = [
+        let categories = [
             { id: 'icon-ring', name: 'アイコンリング' },
             { id: 'iriam-header', name: 'IRIAMヘッダー' },
             { id: 'x-header', name: 'Xヘッダー' },
@@ -516,6 +528,7 @@
         ];
 
         let items = [];
+        let categoryHeaderTexts = {}; 
         let isEditPositionMode = false;
 
         function switchView(viewName) {
@@ -525,7 +538,6 @@
             document.getElementById(`view-${viewName}`).classList.add('active');
             event.currentTarget.classList.add('active');
 
-            if (viewName === 'sort') renderSortView();
             if (viewName === 'edit') renderEditView();
             if (viewName === 'preview') renderPreviewView();
         }
@@ -538,15 +550,14 @@
                     img.onload = function() {
                         const ratio = img.width / img.height;
                         const categoryId = determineCategory(ratio, img.width, img.height);
+                        const cleanName = file.name.replace(/\.[^/.]+$/, "");
                         
                         items.push({
                             id: '_' + Math.random().toString(36).substr(2, 9),
                             src: e.target.result,
-                            fileName: file.name.replace(/\.[^/.]+$/, ""),
-                            text: file.name.replace(/\.[^/.]+$/, ""),
-                            category: categoryId,
-                            isTextOnly: false,
-                            textPosition: 'below-alpha' // デフォルトはアルファベットの下
+                            fileName: cleanName,
+                            text: cleanName,
+                            category: categoryId
                         });
                         renderInsertQuickView();
                     }
@@ -556,26 +567,10 @@
             });
         }
 
-        function addTextOnlyItem() {
-            const positionChoice = document.getElementById('textAddPositionMode').value;
-            // 小見出しの横に置く場合は最初のカテゴリ、アルファベットの下の場合はどのカテゴリでも可（今回は代表として最初のカテゴリまたは指定カテゴリ）
-            items.push({
-                id: '_' + Math.random().toString(36).substr(2, 9),
-                src: '',
-                fileName: 'テキストメモ',
-                text: '新しいテキストメモ',
-                category: categories[0].id,
-                isTextOnly: true,
-                textPosition: positionChoice // 'header' または 'below-alpha'
-            });
-            if (isEditPositionMode) renderEditPositionView();
-            else renderEditView();
-        }
-
         function determineCategory(ratio, w, h) {
             if (Math.abs(ratio - 1) < 0.05) return 'icon-ring';
-            if (ratio >= 2.7) return 'x-header'; // Xヘッダー（超横長）
-            if (ratio >= 2.0 && ratio < 2.7) return 'iriam-header'; // IRIAMヘッダー
+            if (ratio >= 2.7) return 'x-header';
+            if (ratio >= 2.0 && ratio < 2.7) return 'iriam-header';
             if (ratio < 0.6 && ratio > 0.45) return 'phone-bg';
             if (ratio <= 0.45) return 'simeji-bg';
             if (ratio > 1.5 && ratio < 2.0) return 'pc-wallpaper';
@@ -597,6 +592,10 @@
             const alpha = getAlphabetLabel(catIndex);
             if (mode === 'filename') {
                 return `${item.fileName} ${alpha}`;
+            } else if (mode === 'hide-text') {
+                const catObj = categories.find(c => c.id === item.category);
+                const catName = catObj ? catObj.name : 'アイテム';
+                return `${catName} ${alpha}`;
             } else {
                 const catObj = categories.find(c => c.id === item.category);
                 const catName = catObj ? catObj.name : 'アイテム';
@@ -607,6 +606,15 @@
         function changeBackgroundColor() {
             const color = document.getElementById('bgColorPicker').value;
             document.body.style.backgroundColor = color;
+        }
+
+        function updateCategoryHeaderContent(catId, val) {
+            categoryHeaderTexts[catId] = val;
+        }
+
+        function updateCategoryName(catId, newName) {
+            const cat = categories.find(c => c.id === catId);
+            if (cat) cat.name = newName;
         }
 
         function renderCategoriesToContainer(containerId, displayModeId, layout = 'vertical') {
@@ -620,84 +628,53 @@
 
             categories.forEach(cat => {
                 const catItems = items.filter(item => item.category === cat.id);
-                if (catItems.length === 0) return;
+                const headerText = categoryHeaderTexts[cat.id] || '';
+                if (catItems.length === 0 && !headerText) return;
 
                 const catDiv = document.createElement('div');
                 catDiv.className = 'category-container';
+                catDiv.setAttribute('draggable', 'true');
+                catDiv.setAttribute('data-cat-id', cat.id);
+                catDiv.addEventListener('dragstart', onCategoryDragStart);
+                catDiv.addEventListener('dragover', onCategoryDragOver);
+                catDiv.addEventListener('drop', onCategoryDrop);
+                catDiv.addEventListener('dragend', onCategoryDragEnd);
                 
-                // 小見出しの横に追加するテキストアイテムをここで抽出・表示できるようにする
-                const headerTextItems = catItems.filter(item => item.isTextOnly && item.textPosition === 'header');
-                const normalItems = catItems.filter(item => !item.isTextOnly || item.textPosition === 'below-alpha');
-
                 let headerHtml = `
                     <div class="category-header">
                         <div class="category-header-left">
+                            <span class="drag-handle" title="ドラッグしてカテゴリを移動">≡</span>
                             <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)">
-                `;
-                
-                // 小見出しの横に追加されたテキスト
-                headerTextItems.forEach(item => {
-                    headerHtml += `
-                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="width: 200px; font-weight: bold;" placeholder="テキスト入力">
-                    `;
-                });
-
-                headerHtml += `
+                            <input type="text" class="category-header-text-input" value="${headerText}" oninput="updateCategoryHeaderContent('${cat.id}', this.value)" placeholder="小見出しの横テキスト (任意)">
                         </div>
                         <span>全 ${catItems.length} 件</span>
                     </div>
+                    <div class="${gridClass}" data-cat-grid-id="${cat.id}" ondragover="onCardGridDragOver(event)" ondrop="onCardGridDrop(event)">
                 `;
 
-                let gridHtml = `<div class="${gridClass}">`;
+                let gridHtml = '';
+                catItems.forEach((item, index) => {
+                    const badgeText = getItemBadgeText(item, index, mode);
+                    const showInput = (mode !== 'hide-text');
 
-                // アルファベットの下などに表示する通常アイテム＋テキストアイテム
-                let normalIndex = 0;
-                catItems.forEach((item) => {
-                    if (item.isTextOnly && item.textPosition === 'header') return; // 小見出し横用は除外
-
-                    // アルファベット付与対象は画像、または「アルファベットの下」に設定されたテキスト
-                    const badgeText = getItemBadgeText(item, normalIndex, mode);
-                    normalIndex++;
-
-                    if (item.isTextOnly) {
-                        gridHtml += `
-                            <div class="item-card">
-                                <div class="item-badge">${badgeText}</div>
-                                <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="margin-top: 1.5rem; font-weight: bold;">
+                    gridHtml += `
+                        <div class="item-card" draggable="true" data-item-id="${item.id}" ondragstart="onCardDragStart(event)" ondragover="onCardDragOver(event)" ondrop="onCardDrop(event)" ondragend="onCardDragEnd(event)">
+                            <div class="item-badge">${badgeText}</div>
+                            <div style="position: absolute; top: 6px; right: 6px; z-index: 11;">
+                                <span class="drag-handle" style="font-size: 1rem; background: rgba(255,255,255,0.8); padding: 0 4px; border-radius: 4px;" title="ドラッグして位置移動">≡</span>
                             </div>
-                        `;
-                    } else if (layout === 'horizontal') {
-                        gridHtml += `
-                            <div class="item-card">
-                                <div class="item-image-wrapper">
-                                    <img src="${item.src}" alt="${item.text}">
-                                </div>
-                                <div class="item-badge">${badgeText}</div>
-                                <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
+                            <div class="item-image-wrapper">
+                                <img src="${item.src}" alt="${item.text}">
                             </div>
-                        `;
-                    } else {
-                        gridHtml += `
-                            <div class="item-card">
-                                <div class="item-badge">${badgeText}</div>
-                                <div class="item-image-wrapper">
-                                    <img src="${item.src}" alt="${item.text}">
-                                </div>
-                                <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)">
-                            </div>
-                        `;
-                    }
+                            ${showInput ? `<input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)">` : ''}
+                        </div>
+                    `;
                 });
 
                 gridHtml += `</div>`;
                 catDiv.innerHTML = headerHtml + gridHtml;
                 container.appendChild(catDiv);
             });
-        }
-
-        function updateCategoryName(catId, newName) {
-            const cat = categories.find(c => c.id === catId);
-            if (cat) cat.name = newName;
         }
 
         function renderPreviewView() {
@@ -714,55 +691,36 @@
 
             categories.forEach(cat => {
                 const catItems = items.filter(item => item.category === cat.id);
-                if (catItems.length === 0) return;
+                const headerText = categoryHeaderTexts[cat.id] || '';
+                if (catItems.length === 0 && !headerText) return;
 
                 const catDiv = document.createElement('div');
                 catDiv.className = 'category-container';
                 
-                const headerTextItems = catItems.filter(item => item.isTextOnly && item.textPosition === 'header');
-
                 let headerHtml = `
                     <div class="category-header">
                         <div class="category-header-left">
                             <h3 style="margin:0;">${cat.name}</h3>
-                `;
-
-                headerTextItems.forEach(item => {
-                    headerHtml += `
-                        <span style="font-size:0.95rem; font-weight:bold;">${item.text || '（テキストなし）'}</span>
-                    `;
-                });
-
-                headerHtml += `
+                            ${headerText ? `<span style="font-size:0.95rem; font-weight:bold;">${headerText}</span>` : ''}
                         </div>
                         <span>全 ${catItems.length} 件</span>
                     </div>
+                    <div class="${gridClass}">
                 `;
 
-                let gridHtml = `<div class="${gridClass}">`;
+                let gridHtml = '';
+                catItems.forEach((item, index) => {
+                    const badgeText = getItemBadgeText(item, index, mode);
+                    const showText = (mode !== 'hide-text');
 
-                let normalIndex = 0;
-                catItems.forEach((item) => {
-                    if (item.isTextOnly && item.textPosition === 'header') return;
-
-                    const badgeText = getItemBadgeText(item, normalIndex, mode);
-                    normalIndex++;
-
-                    if (item.isTextOnly) {
-                        gridHtml += `
-                            <div class="item-card">
-                                <div class="item-badge">${badgeText}</div>
-                                <div style="font-size:0.9rem; font-weight:bold; margin-top: 1.5rem;">${item.text || '（テキストなし）'}</div>
-                            </div>
-                        `;
-                    } else if (layout === 'horizontal') {
+                    if (layout === 'horizontal') {
                         gridHtml += `
                             <div class="item-card">
                                 <div class="item-image-wrapper">
                                     <img src="${item.src}" alt="${item.text}">
                                 </div>
                                 <div class="item-badge">${badgeText}</div>
-                                <div style="font-size:0.9rem; font-weight:500; flex:1;">${item.text || '（説明なし）'}</div>
+                                ${showText ? `<div style="font-size:0.9rem; font-weight:500; flex:1;">${item.text || '（説明なし）'}</div>` : ''}
                             </div>
                         `;
                     } else {
@@ -772,7 +730,7 @@
                                 <div class="item-image-wrapper">
                                     <img src="${item.src}" alt="${item.text}">
                                 </div>
-                                <div style="font-size:0.85rem; font-weight:500; text-align:center;">${item.text || '（説明なし）'}</div>
+                                ${showText ? `<div style="font-size:0.85rem; font-weight:500; text-align:center;">${item.text || '（説明なし）'}</div>` : ''}
                             </div>
                         `;
                     }
@@ -787,7 +745,6 @@
         function renderInsertQuickView() {
             const grid = document.getElementById('quickPreview');
             grid.innerHTML = items.map(item => {
-                if (item.isTextOnly) return '';
                 return `
                     <div class="item-card">
                         <div class="item-image-wrapper"><img src="${item.src}"></div>
@@ -806,7 +763,7 @@
             isEditPositionMode = !isEditPositionMode;
             const btn = document.getElementById('editModeToggleBtn');
             if (isEditPositionMode) {
-                btn.innerText = "テキスト編集に戻す";
+                btn.innerText = "通常の編集に戻す";
                 renderEditPositionView();
             } else {
                 btn.innerText = "画像の位置変更に切り替える";
@@ -827,14 +784,14 @@
             const mode = document.getElementById('editDisplayMode').value;
 
             container.innerHTML = `<div class="sortable-list" id="sortableEditList">` + items.map((item, idx) => {
-                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category && !(i.isTextOnly && i.textPosition === 'header')).length;
+                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
                 const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
 
                 return `
-                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onItemDragStart(event)" ondragover="onItemDragOver(event)" ondrop="onItemDrop(event)" ondragend="onItemDragEnd(event)">
                         <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
-                        ${item.isTextOnly ? '<div style="width:35px; text-align:center; font-size:12px; background:#e2e8f0; border-radius:4px;">TXT</div>' : `<img src="${item.src}">`}
-                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${item.isTextOnly && item.textPosition === 'header' ? '小見出し横' : badgeText}</span>
+                        <img src="${item.src}">
+                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
                         <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
                         <select onchange="updateCategory('${item.id}', this.value)">
                             ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
@@ -845,29 +802,6 @@
             }).join('') + `</div>`;
         }
 
-        function renderSortView() {
-            const list = document.getElementById('sortableList');
-            const mode = document.getElementById('sortDisplayMode').value;
-
-            list.innerHTML = items.map((item, idx) => {
-                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category && !(i.isTextOnly && i.textPosition === 'header')).length;
-                const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
-
-                return `
-                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
-                        <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
-                        ${item.isTextOnly ? '<div style="width:35px; text-align:center; font-size:12px; background:#e2e8f0; border-radius:4px;">TXT</div>' : `<img src="${item.src}">`}
-                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${item.isTextOnly && item.textPosition === 'header' ? '小見出し横' : badgeText}</span>
-                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
-                        <select onchange="updateCategory('${item.id}', this.value)">
-                            ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
-                        </select>
-                        <button class="btn btn-danger" onclick="removeItem('${item.id}')">削除</button>
-                    </div>
-                `;
-            }).join('');
-        }
-
         function updateCategory(id, newCat) {
             const target = items.find(i => i.id === id);
             if (target) target.category = newCat;
@@ -876,44 +810,160 @@
 
         function removeItem(id) {
             items = items.filter(i => i.id !== id);
-            renderSortView();
             renderInsertQuickView();
             if (isEditPositionMode) renderEditPositionView();
             else renderEditView();
         }
 
-        let draggedId = null;
+        // カテゴリのドラッグ＆ドロップ並び替え
+        let draggedCatId = null;
 
-        function onDragStart(e) {
-            draggedId = e.currentTarget.getAttribute('data-id');
+        function onCategoryDragStart(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('.item-card')) return;
+            draggedCatId = e.currentTarget.getAttribute('data-cat-id');
             e.currentTarget.classList.add('dragging');
         }
 
-        function onDragOver(e) {
+        function onCategoryDragOver(e) {
             e.preventDefault();
         }
 
-        function onDrop(e) {
+        function onCategoryDrop(e) {
+            e.preventDefault();
+            const targetCard = e.target.closest('.category-container');
+            if (!targetCard || draggedCatId === null) return;
+            const targetCatId = targetCard.getAttribute('data-cat-id');
+            if (draggedCatId === targetCatId) return;
+
+            const draggedIndex = categories.findIndex(c => c.id === draggedCatId);
+            const targetIndex = categories.findIndex(c => c.id === targetCatId);
+
+            if (draggedIndex !== -1 && targetIndex !== -1) {
+                const [removed] = categories.splice(draggedIndex, 1);
+                categories.splice(targetIndex, 0, removed);
+                renderEditView();
+            }
+        }
+
+        function onCategoryDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedCatId = null;
+        }
+
+        // カード（アイテム）のドラッグ＆ドロップ並び替え（通常編集画面用）
+        let draggedCardId = null;
+
+        function onCardDragStart(e) {
+            if (e.target.tagName === 'INPUT') return;
+            draggedCardId = e.currentTarget.getAttribute('data-item-id');
+            e.currentTarget.classList.add('dragging');
+            e.stopPropagation();
+        }
+
+        function onCardDragOver(e) {
+            e.preventDefault();
+        }
+
+        function onCardDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetCard = e.target.closest('.item-card');
+            const targetGrid = e.target.closest('.items-grid');
+            if (!targetGrid || !draggedCardId) return;
+
+            const targetCatId = targetGrid.getAttribute('data-cat-grid-id');
+            const draggedItem = items.find(i => i.id === draggedCardId);
+            if (!draggedItem) return;
+
+            // カテゴリを更新
+            draggedItem.category = targetCatId;
+
+            if (targetCard) {
+                const targetCardId = targetCard.getAttribute('data-item-id');
+                if (draggedCardId !== targetCardId) {
+                    const draggedIndex = items.findIndex(i => i.id === draggedCardId);
+                    const targetIndex = items.findIndex(i => i.id === targetCardId);
+                    if (draggedIndex !== -1 && targetIndex !== -1) {
+                        const [removed] = items.splice(draggedIndex, 1);
+                        const newTargetIndex = items.findIndex(i => i.id === targetCardId);
+                        items.splice(newTargetIndex, 0, removed);
+                    }
+                }
+            } else {
+                // グリッドの空いているスペースにドロップされた場合、そのカテゴリの末尾に移動
+                const draggedIndex = items.findIndex(i => i.id === draggedCardId);
+                if (draggedIndex !== -1) {
+                    const [removed] = items.splice(draggedIndex, 1);
+                    const catItems = items.filter(i => i.category === targetCatId);
+                    if (catItems.length > 0) {
+                        const lastItemInCat = catItems[catItems.length - 1];
+                        const lastIdx = items.findIndex(i => i.id === lastItemInCat.id);
+                        items.splice(lastIdx + 1, 0, removed);
+                    } else {
+                        items.push(removed);
+                    }
+                }
+            }
+            renderEditView();
+        }
+
+        function onCardGridDragOver(e) {
+            e.preventDefault();
+        }
+
+        function onCardGridDrop(e) {
+            e.preventDefault();
+            // グリッド自体のドロップ（もしカード以外の上でドロップされた場合）
+            if (e.target.classList.contains('items-grid') && draggedCardId) {
+                const targetCatId = e.target.getAttribute('data-cat-grid-id');
+                const draggedItem = items.find(i => i.id === draggedCardId);
+                if (draggedItem) {
+                    draggedItem.category = targetCatId;
+                    const draggedIndex = items.findIndex(i => i.id === draggedCardId);
+                    const [removed] = items.splice(draggedIndex, 1);
+                    items.push(removed);
+                    renderEditView();
+                }
+            }
+        }
+
+        function onCardDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedCardId = null;
+        }
+
+        // リスト形式編集画面用の並び替え
+        let draggedItemId = null;
+
+        function onItemDragStart(e) {
+            draggedItemId = e.currentTarget.getAttribute('data-id');
+            e.currentTarget.classList.add('dragging');
+        }
+
+        function onItemDragOver(e) {
+            e.preventDefault();
+        }
+
+        function onItemDrop(e) {
             e.preventDefault();
             const targetItem = e.target.closest('.sortable-item');
             if (!targetItem) return;
             const targetId = targetItem.getAttribute('data-id');
-            if (draggedId === targetId) return;
+            if (draggedItemId === targetId) return;
 
-            const draggedIndex = items.findIndex(i => i.id === draggedId);
+            const draggedIndex = items.findIndex(i => i.id === draggedItemId);
             const targetIndex = items.findIndex(i => i.id === targetId);
 
             if (draggedIndex !== -1 && targetIndex !== -1) {
                 const [removed] = items.splice(draggedIndex, 1);
                 items.splice(targetIndex, 0, removed);
                 if (isEditPositionMode) renderEditPositionView();
-                else renderSortView();
             }
         }
 
-        function onDragEnd(e) {
+        function onItemDragEnd(e) {
             e.currentTarget.classList.remove('dragging');
-            draggedId = null;
+            draggedItemId = null;
         }
 
         function saveAsImage(containerId, isTransparent) {
@@ -931,3 +981,4 @@
     </script>
 </body>
 </html>
+
