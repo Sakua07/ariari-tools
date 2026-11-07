@@ -37,6 +37,15 @@
             z-index: 100;
         }
 
+        .header-center-backup {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
         .app-title-input {
             font-size: 1.25rem;
             font-weight: bold;
@@ -105,10 +114,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .category-container.dragging {
-            opacity: 0.4;
-        }
-
         .category-header {
             display: flex;
             justify-content: space-between;
@@ -131,14 +136,14 @@
         .category-name-input {
             font-size: 1.1rem;
             font-weight: bold;
-            border: 1px solid var(--border-color);
+            border: 1px solid transparent;
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
             width: 200px;
-            background: #fff;
         }
         .category-name-input:hover, .category-name-input:focus {
-            border-color: var(--primary-color);
+            border-color: var(--border-color);
+            background: #fff;
             outline: none;
         }
 
@@ -174,10 +179,6 @@
             position: relative;
         }
 
-        .items-grid.layout-vertical .item-card.dragging {
-            opacity: 0.4;
-        }
-
         .items-grid.layout-vertical .item-image-wrapper {
             width: 100%;
             height: 130px;
@@ -207,10 +208,6 @@
             position: relative;
         }
 
-        .items-grid.layout-horizontal .item-card.dragging {
-            opacity: 0.4;
-        }
-
         .items-grid.layout-horizontal .item-image-wrapper {
             width: 80px;
             height: 60px;
@@ -221,72 +218,6 @@
             justify-content: center;
             overflow: hidden;
             flex-shrink: 0;
-        }
-
-        /* IRIAMヘッダーサイズレイアウト */
-        .items-grid.layout-iriam {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .items-grid.layout-iriam .item-card {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            position: relative;
-        }
-
-        .items-grid.layout-iriam .item-card.dragging {
-            opacity: 0.4;
-        }
-
-        .items-grid.layout-iriam .item-image-wrapper {
-            width: 100%;
-            height: 90px;
-            background: #f1f5f9;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        /* 新規作成（カスタム）レイアウト */
-        .items-grid.layout-custom {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 1rem;
-        }
-
-        .items-grid.layout-custom .item-card {
-            background: #fff;
-            border: 2px dashed var(--primary-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            position: relative;
-        }
-
-        .items-grid.layout-custom .item-card.dragging {
-            opacity: 0.4;
-        }
-
-        .items-grid.layout-custom .item-image-wrapper {
-            width: 100%;
-            height: 110px;
-            background: #eef2ff;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
         }
 
         .item-image-wrapper img {
@@ -305,6 +236,16 @@
             font-size: 0.7rem;
             border-radius: 4px;
             z-index: 10;
+        }
+
+        .item-select-checkbox {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            z-index: 15;
         }
 
         .items-grid.layout-horizontal .item-badge {
@@ -411,6 +352,14 @@
             align-items: center;
             flex-wrap: wrap;
         }
+
+        /* プレビュー出力エリアの全体サイズコンテナ用スタイル */
+        #previewExportArea {
+            box-sizing: border-box;
+            overflow: auto;
+            margin: 0 auto;
+            transition: all 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -419,8 +368,14 @@
         <div>
             <input type="text" id="appTitle" class="app-title-input" value="返礼品一覧">
         </div>
+        <div class="header-center-backup">
+            <button class="btn" onclick="exportJohnsonFile()" title="画像状態や、並び、名前変更、プレビューなど全ての状態を保存します">バックアップ</button>
+            <button class="btn" onclick="document.getElementById('johnsonFileInput').click()" title="ファイルを選んで状態を復元します">復元</button>
+            <input type="file" id="johnsonFileInput" accept=".json" style="display: none;" onchange="importJohnsonFile(this)">
+        </div>
         <nav class="nav-menu">
             <button class="nav-btn active" onclick="switchView('insert')">画像を挿入</button>
+            <button class="nav-btn" onclick="switchView('sort')">並び替え</button>
             <button class="nav-btn" onclick="switchView('edit')">編集・保存</button>
             <button class="nav-btn" onclick="switchView('preview')">プレビュー</button>
         </nav>
@@ -440,13 +395,29 @@
             <div id="quickPreview" class="items-grid layout-vertical"></div>
         </section>
 
-        <!-- 2. 画像を編集・保存画面 -->
+        <!-- 2. 並び替え画面 -->
+        <section id="view-sort" class="view-section">
+            <div class="guide-box">
+                操作方法: 左端のハンバーガーメニュー（三本線）を押しそのままドラッグして上下に動かすことで、順番を入れ替えられます。
+            </div>
+            <div class="toolbar">
+                <h2>並び替え・カテゴリ変更</h2>
+                <div>
+                    <label>表示設定: </label>
+                    <select id="sortDisplayMode" onchange="renderSortView()">
+                        <option value="default">判定名＋アルファベット</option>
+                        <option value="filename">画像名＋アルファベット</option>
+                        <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
+                    </select>
+                </div>
+            </div>
+            <div id="sortableList" class="sortable-list"></div>
+        </section>
+
+        <!-- 3. 画像を編集・保存画面 -->
         <section id="view-edit" class="view-section">
             <div class="guide-box">
-                操作方法: 
-                <br>・<strong>カテゴリ自体の並び替え</strong>: 各カテゴリタイトルの左側にある「≡」を掴んで上下にドラッグ＆ドロップします。
-                <br>・<strong>カテゴリー内のカード並び替え</strong>: 通常編集時の各カード内にある「≡」を掴んで、同じカテゴリー内や別のカテゴリー内へドラッグ＆ドロップして並び替えられます。
-                <br>・<strong>リスト形式での変更</strong>: 「画像の位置変更に切り替える」ボタンを押すと、リスト形式で一括して順番や所属カテゴリを変更することもできます。
+                操作方法: 各小見出しの横に自由にテキストを入力できます。画像下のテキストボックスで画像名も変更可能です。各カードの右上のチェックボックスで選択し、「チェックした画像を保存」でその画像をそのままの画質で保存できます。
             </div>
             <div class="toolbar">
                 <h2>編集と自動保存</h2>
@@ -460,6 +431,7 @@
                             <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
                         </select>
                     </div>
+                    <button class="btn" onclick="saveSelectedCheckedImages()">チェックした画像を保存</button>
                     <button class="btn" onclick="saveAsImage('editExportArea', false)">画像を保存</button>
                     <button class="btn" onclick="saveAsImage('editExportArea', true)">背景を透過して保存</button>
                 </div>
@@ -469,10 +441,10 @@
             </div>
         </section>
 
-        <!-- 3. プレビュー画面 -->
+        <!-- 4. プレビュー画面 -->
         <section id="view-preview" class="view-section">
             <div class="guide-box">
-                操作方法: 完成した一覧のプレビューです。「表示設定」や「レイアウト」を変更して調整できます。「画像を保存」「背景を透過して保存」ボタンからダウンロード可能です。
+                操作方法: プレビュー全体のサイズ・レイアウトを選択できます。「IRIAMヘッダーサイズ」や「新規作成（カスタムサイズ）」を選ぶと、表全体のピクセル数に合わせて収めることができます。
             </div>
             <div class="toolbar">
                 <h2>完成プレビュー</h2>
@@ -486,13 +458,23 @@
                         </select>
                     </div>
                     <div>
-                        <label>レイアウト: </label>
+                        <label>カードレイアウト: </label>
                         <select id="layoutMode" onchange="renderPreviewView()">
                             <option value="vertical">縦長</option>
                             <option value="horizontal">横長</option>
-                            <option value="iriam">IRIAMヘッダーサイズ</option>
-                            <option value="custom">新規作成 (カスタム)</option>
                         </select>
+                    </div>
+                    <div>
+                        <label>全体サイズ(キャンバス): </label>
+                        <select id="canvasSizeMode" onchange="onCanvasSizeChange()">
+                            <option value="auto">自動 (可変)</option>
+                            <option value="iriam">IRIAMヘッダーサイズ (1920×1080)</option>
+                            <option value="custom">カスタムサイズ入力</option>
+                        </select>
+                    </div>
+                    <div id="customSizeInputs" style="display: none; align-items: center; gap: 0.3rem;">
+                        <input type="number" id="customWidth" value="1200" style="width: 70px; padding: 0.2rem;" oninput="renderPreviewView()"> px ×
+                        <input type="number" id="customHeight" value="800" style="width: 70px; padding: 0.2rem;" oninput="renderPreviewView()"> px
                     </div>
                     <div>
                         <label>背景色: </label>
@@ -509,7 +491,8 @@
                     <button class="btn" onclick="saveAsImage('previewExportArea', true)">背景を透過して保存</button>
                 </div>
             </div>
-            <div id="previewExportArea" style="padding: 10px; border-radius: 8px;">
+            <!-- 表全体を囲むエクスポート用領域 -->
+            <div id="previewExportArea" style="padding: 15px; border-radius: 8px;">
                 <h2 id="previewAppTitle" style="text-align: center; margin-bottom: 1.5rem;">返礼品一覧</h2>
                 <div id="previewContainer"></div>
             </div>
@@ -538,6 +521,7 @@
             document.getElementById(`view-${viewName}`).classList.add('active');
             event.currentTarget.classList.add('active');
 
+            if (viewName === 'sort') renderSortView();
             if (viewName === 'edit') renderEditView();
             if (viewName === 'preview') renderPreviewView();
         }
@@ -557,7 +541,8 @@
                             src: e.target.result,
                             fileName: cleanName,
                             text: cleanName,
-                            category: categoryId
+                            category: categoryId,
+                            checked: false
                         });
                         renderInsertQuickView();
                     }
@@ -568,9 +553,12 @@
         }
 
         function determineCategory(ratio, w, h) {
+            if ((w === 1242 && h === 924) || (w === 1500 && h === 1115)) return 'simeji-bg';
+            if (Math.abs(ratio - (1242/924)) < 0.03 || Math.abs(ratio - (1500/1115)) < 0.03) return 'simeji-bg';
+            
             if (Math.abs(ratio - 1) < 0.05) return 'icon-ring';
-            if (ratio >= 2.7) return 'x-header';
-            if (ratio >= 2.0 && ratio < 2.7) return 'iriam-header';
+            if (ratio >= 2.7) return 'x-header'; 
+            if (ratio >= 2.0 && ratio < 2.7) return 'iriam-header'; 
             if (ratio < 0.6 && ratio > 0.45) return 'phone-bg';
             if (ratio <= 0.45) return 'simeji-bg';
             if (ratio > 1.5 && ratio < 2.0) return 'pc-wallpaper';
@@ -612,9 +600,9 @@
             categoryHeaderTexts[catId] = val;
         }
 
-        function updateCategoryName(catId, newName) {
-            const cat = categories.find(c => c.id === catId);
-            if (cat) cat.name = newName;
+        function updateItemCheck(id, isChecked) {
+            const target = items.find(i => i.id === id);
+            if (target) target.checked = isChecked;
         }
 
         function renderCategoriesToContainer(containerId, displayModeId, layout = 'vertical') {
@@ -623,8 +611,6 @@
             const mode = document.getElementById(displayModeId).value;
             let gridClass = 'items-grid layout-vertical';
             if (layout === 'horizontal') gridClass = 'items-grid layout-horizontal';
-            if (layout === 'iriam') gridClass = 'items-grid layout-iriam';
-            if (layout === 'custom') gridClass = 'items-grid layout-custom';
 
             categories.forEach(cat => {
                 const catItems = items.filter(item => item.category === cat.id);
@@ -633,23 +619,16 @@
 
                 const catDiv = document.createElement('div');
                 catDiv.className = 'category-container';
-                catDiv.setAttribute('draggable', 'true');
-                catDiv.setAttribute('data-cat-id', cat.id);
-                catDiv.addEventListener('dragstart', onCategoryDragStart);
-                catDiv.addEventListener('dragover', onCategoryDragOver);
-                catDiv.addEventListener('drop', onCategoryDrop);
-                catDiv.addEventListener('dragend', onCategoryDragEnd);
                 
                 let headerHtml = `
                     <div class="category-header">
                         <div class="category-header-left">
-                            <span class="drag-handle" title="ドラッグしてカテゴリを移動">≡</span>
                             <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)">
                             <input type="text" class="category-header-text-input" value="${headerText}" oninput="updateCategoryHeaderContent('${cat.id}', this.value)" placeholder="小見出しの横テキスト (任意)">
                         </div>
                         <span>全 ${catItems.length} 件</span>
                     </div>
-                    <div class="${gridClass}" data-cat-grid-id="${cat.id}" ondragover="onCardGridDragOver(event)" ondrop="onCardGridDrop(event)">
+                    <div class="${gridClass}">
                 `;
 
                 let gridHtml = '';
@@ -658,11 +637,9 @@
                     const showInput = (mode !== 'hide-text');
 
                     gridHtml += `
-                        <div class="item-card" draggable="true" data-item-id="${item.id}" ondragstart="onCardDragStart(event)" ondragover="onCardDragOver(event)" ondrop="onCardDrop(event)" ondragend="onCardDragEnd(event)">
+                        <div class="item-card">
+                            <input type="checkbox" class="item-select-checkbox" ${item.checked ? 'checked' : ''} onchange="updateItemCheck('${item.id}', this.checked)" title="元の画質で保存するためにチェック">
                             <div class="item-badge">${badgeText}</div>
-                            <div style="position: absolute; top: 6px; right: 6px; z-index: 11;">
-                                <span class="drag-handle" style="font-size: 1rem; background: rgba(255,255,255,0.8); padding: 0 4px; border-radius: 4px;" title="ドラッグして位置移動">≡</span>
-                            </div>
                             <div class="item-image-wrapper">
                                 <img src="${item.src}" alt="${item.text}">
                             </div>
@@ -677,17 +654,47 @@
             });
         }
 
+        function updateCategoryName(catId, newName) {
+            const cat = categories.find(c => c.id === catId);
+            if (cat) cat.name = newName;
+        }
+
+        function onCanvasSizeChange() {
+            const mode = document.getElementById('canvasSizeMode').value;
+            const customInputs = document.getElementById('customSizeInputs');
+            if (mode === 'custom') {
+                customInputs.style.display = 'flex';
+            } else {
+                customInputs.style.display = 'none';
+            }
+            renderPreviewView();
+        }
+
         function renderPreviewView() {
             document.getElementById('previewAppTitle').innerText = document.getElementById('appTitle').value;
             const layout = document.getElementById('layoutMode').value;
+            const canvasMode = document.getElementById('canvasSizeMode').value;
+            const exportArea = document.getElementById('previewExportArea');
+
+            // 全体キャンバスサイズの適用
+            if (canvasMode === 'iriam') {
+                exportArea.style.width = '1920px';
+                exportArea.style.height = '1080px';
+            } else if (canvasMode === 'custom') {
+                const w = document.getElementById('customWidth').value || 1200;
+                const h = document.getElementById('customHeight').value || 800;
+                exportArea.style.width = w + 'px';
+                exportArea.style.height = h + 'px';
+            } else {
+                exportArea.style.width = 'auto';
+                exportArea.style.height = 'auto';
+            }
             
             const container = document.getElementById('previewContainer');
             container.innerHTML = '';
             const mode = document.getElementById('previewDisplayMode').value;
             let gridClass = 'items-grid layout-vertical';
             if (layout === 'horizontal') gridClass = 'items-grid layout-horizontal';
-            if (layout === 'iriam') gridClass = 'items-grid layout-iriam';
-            if (layout === 'custom') gridClass = 'items-grid layout-custom';
 
             categories.forEach(cat => {
                 const catItems = items.filter(item => item.category === cat.id);
@@ -763,7 +770,7 @@
             isEditPositionMode = !isEditPositionMode;
             const btn = document.getElementById('editModeToggleBtn');
             if (isEditPositionMode) {
-                btn.innerText = "通常の編集に戻す";
+                btn.innerText = "テキスト編集に戻す";
                 renderEditPositionView();
             } else {
                 btn.innerText = "画像の位置変更に切り替える";
@@ -788,7 +795,8 @@
                 const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
 
                 return `
-                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onItemDragStart(event)" ondragover="onItemDragOver(event)" ondrop="onItemDrop(event)" ondragend="onItemDragEnd(event)">
+                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="updateItemCheck('${item.id}', this.checked)" title="元の画質で保存するためにチェック">
                         <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
                         <img src="${item.src}">
                         <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
@@ -802,6 +810,29 @@
             }).join('') + `</div>`;
         }
 
+        function renderSortView() {
+            const list = document.getElementById('sortableList');
+            const mode = document.getElementById('sortDisplayMode').value;
+
+            list.innerHTML = items.map((item, idx) => {
+                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
+                const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
+
+                return `
+                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+                        <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
+                        <img src="${item.src}">
+                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
+                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
+                        <select onchange="updateCategory('${item.id}', this.value)">
+                            ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
+                        </select>
+                        <button class="btn btn-danger" onclick="removeItem('${item.id}')">削除</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function updateCategory(id, newCat) {
             const target = items.find(i => i.id === id);
             if (target) target.category = newCat;
@@ -810,160 +841,125 @@
 
         function removeItem(id) {
             items = items.filter(i => i.id !== id);
+            renderSortView();
             renderInsertQuickView();
             if (isEditPositionMode) renderEditPositionView();
             else renderEditView();
         }
 
-        // カテゴリのドラッグ＆ドロップ並び替え
-        let draggedCatId = null;
+        let draggedId = null;
 
-        function onCategoryDragStart(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('.item-card')) return;
-            draggedCatId = e.currentTarget.getAttribute('data-cat-id');
+        function onDragStart(e) {
+            draggedId = e.currentTarget.getAttribute('data-id');
             e.currentTarget.classList.add('dragging');
         }
 
-        function onCategoryDragOver(e) {
+        function onDragOver(e) {
             e.preventDefault();
         }
 
-        function onCategoryDrop(e) {
-            e.preventDefault();
-            const targetCard = e.target.closest('.category-container');
-            if (!targetCard || draggedCatId === null) return;
-            const targetCatId = targetCard.getAttribute('data-cat-id');
-            if (draggedCatId === targetCatId) return;
-
-            const draggedIndex = categories.findIndex(c => c.id === draggedCatId);
-            const targetIndex = categories.findIndex(c => c.id === targetCatId);
-
-            if (draggedIndex !== -1 && targetIndex !== -1) {
-                const [removed] = categories.splice(draggedIndex, 1);
-                categories.splice(targetIndex, 0, removed);
-                renderEditView();
-            }
-        }
-
-        function onCategoryDragEnd(e) {
-            e.currentTarget.classList.remove('dragging');
-            draggedCatId = null;
-        }
-
-        // カード（アイテム）のドラッグ＆ドロップ並び替え（通常編集画面用）
-        let draggedCardId = null;
-
-        function onCardDragStart(e) {
-            if (e.target.tagName === 'INPUT') return;
-            draggedCardId = e.currentTarget.getAttribute('data-item-id');
-            e.currentTarget.classList.add('dragging');
-            e.stopPropagation();
-        }
-
-        function onCardDragOver(e) {
-            e.preventDefault();
-        }
-
-        function onCardDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const targetCard = e.target.closest('.item-card');
-            const targetGrid = e.target.closest('.items-grid');
-            if (!targetGrid || !draggedCardId) return;
-
-            const targetCatId = targetGrid.getAttribute('data-cat-grid-id');
-            const draggedItem = items.find(i => i.id === draggedCardId);
-            if (!draggedItem) return;
-
-            // カテゴリを更新
-            draggedItem.category = targetCatId;
-
-            if (targetCard) {
-                const targetCardId = targetCard.getAttribute('data-item-id');
-                if (draggedCardId !== targetCardId) {
-                    const draggedIndex = items.findIndex(i => i.id === draggedCardId);
-                    const targetIndex = items.findIndex(i => i.id === targetCardId);
-                    if (draggedIndex !== -1 && targetIndex !== -1) {
-                        const [removed] = items.splice(draggedIndex, 1);
-                        const newTargetIndex = items.findIndex(i => i.id === targetCardId);
-                        items.splice(newTargetIndex, 0, removed);
-                    }
-                }
-            } else {
-                // グリッドの空いているスペースにドロップされた場合、そのカテゴリの末尾に移動
-                const draggedIndex = items.findIndex(i => i.id === draggedCardId);
-                if (draggedIndex !== -1) {
-                    const [removed] = items.splice(draggedIndex, 1);
-                    const catItems = items.filter(i => i.category === targetCatId);
-                    if (catItems.length > 0) {
-                        const lastItemInCat = catItems[catItems.length - 1];
-                        const lastIdx = items.findIndex(i => i.id === lastItemInCat.id);
-                        items.splice(lastIdx + 1, 0, removed);
-                    } else {
-                        items.push(removed);
-                    }
-                }
-            }
-            renderEditView();
-        }
-
-        function onCardGridDragOver(e) {
-            e.preventDefault();
-        }
-
-        function onCardGridDrop(e) {
-            e.preventDefault();
-            // グリッド自体のドロップ（もしカード以外の上でドロップされた場合）
-            if (e.target.classList.contains('items-grid') && draggedCardId) {
-                const targetCatId = e.target.getAttribute('data-cat-grid-id');
-                const draggedItem = items.find(i => i.id === draggedCardId);
-                if (draggedItem) {
-                    draggedItem.category = targetCatId;
-                    const draggedIndex = items.findIndex(i => i.id === draggedCardId);
-                    const [removed] = items.splice(draggedIndex, 1);
-                    items.push(removed);
-                    renderEditView();
-                }
-            }
-        }
-
-        function onCardDragEnd(e) {
-            e.currentTarget.classList.remove('dragging');
-            draggedCardId = null;
-        }
-
-        // リスト形式編集画面用の並び替え
-        let draggedItemId = null;
-
-        function onItemDragStart(e) {
-            draggedItemId = e.currentTarget.getAttribute('data-id');
-            e.currentTarget.classList.add('dragging');
-        }
-
-        function onItemDragOver(e) {
-            e.preventDefault();
-        }
-
-        function onItemDrop(e) {
+        function onDrop(e) {
             e.preventDefault();
             const targetItem = e.target.closest('.sortable-item');
             if (!targetItem) return;
             const targetId = targetItem.getAttribute('data-id');
-            if (draggedItemId === targetId) return;
+            if (draggedId === targetId) return;
 
-            const draggedIndex = items.findIndex(i => i.id === draggedItemId);
+            const draggedIndex = items.findIndex(i => i.id === draggedId);
             const targetIndex = items.findIndex(i => i.id === targetId);
 
             if (draggedIndex !== -1 && targetIndex !== -1) {
                 const [removed] = items.splice(draggedIndex, 1);
                 items.splice(targetIndex, 0, removed);
                 if (isEditPositionMode) renderEditPositionView();
+                else renderSortView();
             }
         }
 
-        function onItemDragEnd(e) {
-            e.currentTarget.classList.remove('dragging');
-            draggedItemId = null;
+        function onDragEnd(e) {
+            e.currentTarget.classList.0?.remove('dragging');
+            draggedId = null;
+        }
+
+        function saveSelectedCheckedImages() {
+            const checkedItems = items.filter(i => i.checked);
+            if (checkedItems.length === 0) {
+                alert('保存する画像にチェックマークがついていません。');
+                return;
+            }
+            checkedItems.forEach(item => {
+                const link = document.createElement('a');
+                link.download = `${item.fileName || 'image'}.png`;
+                link.href = item.src;
+                link.click();
+            });
+        }
+
+        function exportJohnsonFile() {
+            const backupData = {
+                appTitle: document.getElementById('appTitle').value,
+                categories: categories,
+                categoryHeaderTexts: categoryHeaderTexts,
+                items: items,
+                layoutMode: document.getElementById('layoutMode').value,
+                canvasSizeMode: document.getElementById('canvasSizeMode').value,
+                customWidth: document.getElementById('customWidth').value,
+                customHeight: document.getElementById('customHeight').value,
+                previewDisplayMode: document.getElementById('previewDisplayMode').value,
+                editDisplayMode: document.getElementById('editDisplayMode').value,
+                sortDisplayMode: document.getElementById('sortDisplayMode').value,
+                bgColor: document.getElementById('bgColorPicker').value
+            };
+
+            const jsonStr = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'backup_state.json';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJohnsonFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.appTitle !== undefined) document.getElementById('appTitle').value = data.appTitle;
+                    if (data.categories) categories = data.categories;
+                    if (data.categoryHeaderTexts) categoryHeaderTexts = data.categoryHeaderTexts;
+                    if (data.items) items = data.items;
+                    if (data.layoutMode) document.getElementById('layoutMode').value = data.layoutMode;
+                    if (data.canvasSizeMode) {
+                        document.getElementById('canvasSizeMode').value = data.canvasSizeMode;
+                        onCanvasSizeChange();
+                    }
+                    if (data.customWidth) document.getElementById('customWidth').value = data.customWidth;
+                    if (data.customHeight) document.getElementById('customHeight').value = data.customHeight;
+                    if (data.previewDisplayMode) document.getElementById('previewDisplayMode').value = data.previewDisplayMode;
+                    if (data.editDisplayMode) document.getElementById('editDisplayMode').value = data.editDisplayMode;
+                    if (data.sortDisplayMode) document.getElementById('sortDisplayMode').value = data.sortDisplayMode;
+                    if (data.bgColor) {
+                        document.getElementById('bgColorPicker').value = data.bgColor;
+                        changeBackgroundColor();
+                    }
+
+                    renderInsertQuickView();
+                    renderSortView();
+                    renderEditView();
+                    renderPreviewView();
+                    alert('バックアップファイルからすべての状態を正常に復元しました！');
+                } catch (err) {
+                    console.error(err);
+                    alert('ファイルの読み込みに失敗しました。ファイル形式が正しいか確認してください。');
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
 
         function saveAsImage(containerId, isTransparent) {
@@ -981,4 +977,3 @@
     </script>
 </body>
 </html>
-
