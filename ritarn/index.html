@@ -353,7 +353,6 @@
             flex-wrap: wrap;
         }
 
-        /* プレビュー出力エリアの全体サイズコンテナ用スタイル */
         #previewExportArea {
             box-sizing: border-box;
             overflow: auto;
@@ -375,7 +374,6 @@
         </div>
         <nav class="nav-menu">
             <button class="nav-btn active" onclick="switchView('insert')">画像を挿入</button>
-            <button class="nav-btn" onclick="switchView('sort')">並び替え</button>
             <button class="nav-btn" onclick="switchView('edit')">編集・保存</button>
             <button class="nav-btn" onclick="switchView('preview')">プレビュー</button>
         </nav>
@@ -395,34 +393,15 @@
             <div id="quickPreview" class="items-grid layout-vertical"></div>
         </section>
 
-        <!-- 2. 並び替え画面 -->
-        <section id="view-sort" class="view-section">
-            <div class="guide-box">
-                操作方法: 左端のハンバーガーメニュー（三本線）を押しそのままドラッグして上下に動かすことで、順番を入れ替えられます。
-            </div>
-            <div class="toolbar">
-                <h2>並び替え・カテゴリ変更</h2>
-                <div>
-                    <label>表示設定: </label>
-                    <select id="sortDisplayMode" onchange="renderSortView()">
-                        <option value="default">判定名＋アルファベット</option>
-                        <option value="filename">画像名＋アルファベット</option>
-                        <option value="hide-text">画像名なし（カード下テキスト非表示）</option>
-                    </select>
-                </div>
-            </div>
-            <div id="sortableList" class="sortable-list"></div>
-        </section>
-
-        <!-- 3. 画像を編集・保存画面 -->
+        <!-- 2. 画像を編集・保存画面 -->
         <section id="view-edit" class="view-section">
             <div class="guide-box">
-                操作方法: 各小見出しの横に自由にテキストを入力できます。画像下のテキストボックスで画像名も変更可能です。各カードの右上のチェックボックスで選択し、「チェックした画像を保存」でその画像をそのままの画質で保存できます。
+                操作方法: 「位置変更（並び替え）モードに切り替える」を押すと、ドラッグ＆ドロップやカテゴリ変更で直感的に並び替えができます。通常モードでは小見出しや説明文の編集、チェック付き画像の個別保存が行えます。
             </div>
             <div class="toolbar">
                 <h2>編集と自動保存</h2>
                 <div class="settings-group">
-                    <button class="btn" id="editModeToggleBtn" onclick="toggleEditMode()">画像の位置変更に切り替える</button>
+                    <button class="btn" id="editModeToggleBtn" onclick="toggleEditMode()">位置変更（並び替え）モードに切り替える</button>
                     <div>
                         <label>表示設定: </label>
                         <select id="editDisplayMode" onchange="renderEditView()">
@@ -441,7 +420,7 @@
             </div>
         </section>
 
-        <!-- 4. プレビュー画面 -->
+        <!-- 3. プレビュー画面 -->
         <section id="view-preview" class="view-section">
             <div class="guide-box">
                 操作方法: プレビュー全体のサイズ・レイアウトを選択できます。「IRIAMヘッダーサイズ」や「新規作成（カスタムサイズ）」を選ぶと、表全体のピクセル数に合わせて収めることができます。
@@ -521,7 +500,6 @@
             document.getElementById(`view-${viewName}`).classList.add('active');
             event.currentTarget.classList.add('active');
 
-            if (viewName === 'sort') renderSortView();
             if (viewName === 'edit') renderEditView();
             if (viewName === 'preview') renderPreviewView();
         }
@@ -676,7 +654,6 @@
             const canvasMode = document.getElementById('canvasSizeMode').value;
             const exportArea = document.getElementById('previewExportArea');
 
-            // 全体キャンバスサイズの適用
             if (canvasMode === 'iriam') {
                 exportArea.style.width = '1920px';
                 exportArea.style.height = '1080px';
@@ -770,10 +747,10 @@
             isEditPositionMode = !isEditPositionMode;
             const btn = document.getElementById('editModeToggleBtn');
             if (isEditPositionMode) {
-                btn.innerText = "テキスト編集に戻す";
+                btn.innerText = "通常の編集モードに戻す";
                 renderEditPositionView();
             } else {
-                btn.innerText = "画像の位置変更に切り替える";
+                btn.innerText = "位置変更（並び替え）モードに切り替える";
                 renderEditView();
             }
         }
@@ -810,29 +787,6 @@
             }).join('') + `</div>`;
         }
 
-        function renderSortView() {
-            const list = document.getElementById('sortableList');
-            const mode = document.getElementById('sortDisplayMode').value;
-
-            list.innerHTML = items.map((item, idx) => {
-                const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
-                const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
-
-                return `
-                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
-                        <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
-                        <img src="${item.src}">
-                        <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
-                        <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
-                        <select onchange="updateCategory('${item.id}', this.value)">
-                            ${categories.map(c => `<option value="${c.id}" ${c.id === item.category ? 'selected' : ''}>${c.name}</option>`).join('')}
-                        </select>
-                        <button class="btn btn-danger" onclick="removeItem('${item.id}')">削除</button>
-                    </div>
-                `;
-            }).join('');
-        }
-
         function updateCategory(id, newCat) {
             const target = items.find(i => i.id === id);
             if (target) target.category = newCat;
@@ -841,7 +795,6 @@
 
         function removeItem(id) {
             items = items.filter(i => i.id !== id);
-            renderSortView();
             renderInsertQuickView();
             if (isEditPositionMode) renderEditPositionView();
             else renderEditView();
@@ -872,7 +825,6 @@
                 const [removed] = items.splice(draggedIndex, 1);
                 items.splice(targetIndex, 0, removed);
                 if (isEditPositionMode) renderEditPositionView();
-                else renderSortView();
             }
         }
 
@@ -907,7 +859,6 @@
                 customHeight: document.getElementById('customHeight').value,
                 previewDisplayMode: document.getElementById('previewDisplayMode').value,
                 editDisplayMode: document.getElementById('editDisplayMode').value,
-                sortDisplayMode: document.getElementById('sortDisplayMode').value,
                 bgColor: document.getElementById('bgColorPicker').value
             };
 
@@ -942,14 +893,12 @@
                     if (data.customHeight) document.getElementById('customHeight').value = data.customHeight;
                     if (data.previewDisplayMode) document.getElementById('previewDisplayMode').value = data.previewDisplayMode;
                     if (data.editDisplayMode) document.getElementById('editDisplayMode').value = data.editDisplayMode;
-                    if (data.sortDisplayMode) document.getElementById('sortDisplayMode').value = data.sortDisplayMode;
                     if (data.bgColor) {
                         document.getElementById('bgColorPicker').value = data.bgColor;
                         changeBackgroundColor();
                     }
 
                     renderInsertQuickView();
-                    renderSortView();
                     renderEditView();
                     renderPreviewView();
                     alert('バックアップファイルからすべての状態を正常に復元しました！');
