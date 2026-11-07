@@ -161,7 +161,7 @@
             outline: none;
         }
 
-        /* 縦長レイアウト */
+        /* 縦長レイアウト（編集・プレビュー共通） */
         .items-grid.layout-vertical {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -279,23 +279,19 @@
             background: #e0e7ff;
         }
 
-        .sortable-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .sortable-item {
+        /* 編集画面の各アイテムカード（ドラッグ並び替え対応） */
+        .edit-card-item {
             background: #fff;
             border: 1px solid var(--border-color);
-            padding: 0.5rem 0.75rem;
+            padding: 0.75rem;
             border-radius: 6px;
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
-        .sortable-item.dragging {
+        .edit-card-item.dragging {
             opacity: 0.4;
         }
 
@@ -306,16 +302,19 @@
             user-select: none;
             padding: 0 0.25rem;
             touch-action: none;
+            flex-shrink: 0;
         }
         .drag-handle:active {
             cursor: grabbing;
         }
 
-        .sortable-item img {
-            width: 35px;
-            height: 35px;
-            object-fit: cover;
+        .edit-card-item img {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
             border-radius: 4px;
+            background: #f1f5f9;
+            flex-shrink: 0;
         }
 
         .btn {
@@ -396,12 +395,11 @@
         <!-- 2. 画像を編集・保存画面 -->
         <section id="view-edit" class="view-section">
             <div class="guide-box">
-                操作方法: 「位置変更（並び替え）モードに切り替える」を押すと、ドラッグ＆ドロップやカテゴリ変更で直感的に並び替えができます。通常モードでは小見出しや説明文の編集、チェック付き画像の個別保存が行えます。
+                操作方法: 「≡」の部分をドラッグして、いつでも自由に並び替えができます。小見出しや説明文の編集、カテゴリ変更、個別保存もここで行えます。
             </div>
             <div class="toolbar">
                 <h2>編集と自動保存</h2>
                 <div class="settings-group">
-                    <button class="btn" id="editModeToggleBtn" onclick="toggleEditMode()">位置変更（並び替え）モードに切り替える</button>
                     <div>
                         <label>表示設定: </label>
                         <select id="editDisplayMode" onchange="renderEditView()">
@@ -491,7 +489,6 @@
 
         let items = [];
         let categoryHeaderTexts = {}; 
-        let isEditPositionMode = false;
 
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -581,55 +578,6 @@
         function updateItemCheck(id, isChecked) {
             const target = items.find(i => i.id === id);
             if (target) target.checked = isChecked;
-        }
-
-        function renderCategoriesToContainer(containerId, displayModeId, layout = 'vertical') {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            const mode = document.getElementById(displayModeId).value;
-            let gridClass = 'items-grid layout-vertical';
-            if (layout === 'horizontal') gridClass = 'items-grid layout-horizontal';
-
-            categories.forEach(cat => {
-                const catItems = items.filter(item => item.category === cat.id);
-                const headerText = categoryHeaderTexts[cat.id] || '';
-                if (catItems.length === 0 && !headerText) return;
-
-                const catDiv = document.createElement('div');
-                catDiv.className = 'category-container';
-                
-                let headerHtml = `
-                    <div class="category-header">
-                        <div class="category-header-left">
-                            <input type="text" class="category-name-input" value="${cat.name}" oninput="updateCategoryName('${cat.id}', this.value)">
-                            <input type="text" class="category-header-text-input" value="${headerText}" oninput="updateCategoryHeaderContent('${cat.id}', this.value)" placeholder="小見出しの横テキスト (任意)">
-                        </div>
-                        <span>全 ${catItems.length} 件</span>
-                    </div>
-                    <div class="${gridClass}">
-                `;
-
-                let gridHtml = '';
-                catItems.forEach((item, index) => {
-                    const badgeText = getItemBadgeText(item, index, mode);
-                    const showInput = (mode !== 'hide-text');
-
-                    gridHtml += `
-                        <div class="item-card">
-                            <input type="checkbox" class="item-select-checkbox" ${item.checked ? 'checked' : ''} onchange="updateItemCheck('${item.id}', this.checked)" title="元の画質で保存するためにチェック">
-                            <div class="item-badge">${badgeText}</div>
-                            <div class="item-image-wrapper">
-                                <img src="${item.src}" alt="${item.text}">
-                            </div>
-                            ${showInput ? `<input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)">` : ''}
-                        </div>
-                    `;
-                });
-
-                gridHtml += `</div>`;
-                catDiv.innerHTML = headerHtml + gridHtml;
-                container.appendChild(catDiv);
-            });
         }
 
         function updateCategoryName(catId, newName) {
@@ -743,38 +691,19 @@
             if (target) target.text = val;
         }
 
-        function toggleEditMode() {
-            isEditPositionMode = !isEditPositionMode;
-            const btn = document.getElementById('editModeToggleBtn');
-            if (isEditPositionMode) {
-                btn.innerText = "通常の編集モードに戻す";
-                renderEditPositionView();
-            } else {
-                btn.innerText = "位置変更（並び替え）モードに切り替える";
-                renderEditView();
-            }
-        }
-
+        /* 編集・並び替え画面の描画（常にドラッグ並び替え可能なリスト形式） */
         function renderEditView() {
-            if (isEditPositionMode) {
-                renderEditPositionView();
-                return;
-            }
-            renderCategoriesToContainer('editContainer', 'editDisplayMode', 'vertical');
-        }
-
-        function renderEditPositionView() {
             const container = document.getElementById('editContainer');
             const mode = document.getElementById('editDisplayMode').value;
 
-            container.innerHTML = `<div class="sortable-list" id="sortableEditList">` + items.map((item, idx) => {
+            container.innerHTML = `<div style="display: flex; flex-direction: column; gap: 0.5rem;" id="sortableEditList">` + items.map((item, idx) => {
                 const catItemsSoFar = items.slice(0, idx).filter(i => i.category === item.category).length;
                 const badgeText = getItemBadgeText(item, catItemsSoFar, mode);
 
                 return `
-                    <div class="sortable-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
+                    <div class="edit-card-item" draggable="true" data-id="${item.id}" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)">
                         <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="updateItemCheck('${item.id}', this.checked)" title="元の画質で保存するためにチェック">
-                        <div class="drag-handle" title="ドラッグして移動" draggable="true">≡</div>
+                        <div class="drag-handle" title="ドラッグして移動">≡</div>
                         <img src="${item.src}">
                         <span style="font-size: 0.8rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${badgeText}</span>
                         <input type="text" class="item-text-input" value="${item.text}" oninput="updateText('${item.id}', this.value)" style="flex:1;">
@@ -790,14 +719,13 @@
         function updateCategory(id, newCat) {
             const target = items.find(i => i.id === id);
             if (target) target.category = newCat;
-            if (isEditPositionMode) renderEditPositionView();
+            renderEditView();
         }
 
         function removeItem(id) {
             items = items.filter(i => i.id !== id);
             renderInsertQuickView();
-            if (isEditPositionMode) renderEditPositionView();
-            else renderEditView();
+            renderEditView();
         }
 
         let draggedId = null;
@@ -813,7 +741,7 @@
 
         function onDrop(e) {
             e.preventDefault();
-            const targetItem = e.target.closest('.sortable-item');
+            const targetItem = e.target.closest('.edit-card-item');
             if (!targetItem) return;
             const targetId = targetItem.getAttribute('data-id');
             if (draggedId === targetId) return;
@@ -824,7 +752,7 @@
             if (draggedIndex !== -1 && targetIndex !== -1) {
                 const [removed] = items.splice(draggedIndex, 1);
                 items.splice(targetIndex, 0, removed);
-                if (isEditPositionMode) renderEditPositionView();
+                renderEditView();
             }
         }
 
