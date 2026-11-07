@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クリエイティブ・グッズ一覧</title>
+    <title>カタログ一覧</title>
     <!-- 画面キャプチャ用ライブラリ (html2canvas) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -35,6 +35,12 @@
             position: sticky;
             top: 0;
             z-index: 100;
+        }
+
+        .header-center-backup {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
 
         .app-title-input {
@@ -206,34 +212,7 @@
             flex-shrink: 0;
         }
 
-        /* 3. ワイドヘッダーサイズレイアウト */
-        .items-grid.layout-iriam {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .items-grid.layout-iriam .item-card {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            position: relative;
-        }
-        .items-grid.layout-iriam .item-image-wrapper {
-            width: 100%;
-            height: 90px;
-            background: #f1f5f9;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        /* 4. 新規作成（カスタム）レイアウト */
+        /* 3. 新規作成（カスタム）レイアウト */
         .items-grid.layout-custom {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -367,7 +346,12 @@
 
     <header>
         <div>
-            <input type="text" id="appTitle" class="app-title-input" value="クリエイティブ一覧">
+            <input type="text" id="appTitle" class="app-title-input" value="カタログ一覧">
+        </div>
+        <div class="header-center-backup">
+            <button class="btn" onclick="exportStateFile()" title="すべての状態（画像、並び、名称など）を保存します">バックアップ</button>
+            <button class="btn" onclick="document.getElementById('stateFileInput').click()" title="バックアップファイルから状態を復元します">復元</button>
+            <input type="file" id="stateFileInput" accept=".json" style="display: none;" onchange="importStateFile(this)">
         </div>
         <nav class="nav-menu">
             <button class="nav-btn active" onclick="switchView('insert')">画像を挿入</button>
@@ -421,7 +405,7 @@
         <!-- 3. プレビュー画面 -->
         <section id="view-preview" class="view-section">
             <div class="guide-box">
-                操作方法: 完成した一覧のプレビューです。「レイアウト」で表全体の並び方（縦長・横長・ワイドヘッダーなど）を変更できます。「画像を保存」「背景を透過して保存」ボタンからダウンロード可能です。
+                操作方法: 完成した一覧のプレビューです。「レイアウト」で表全体の並び方（縦長・横長・新規）を変更できます。「画像を保存」「背景を透過して保存」ボタンからダウンロード可能です。
             </div>
             <div class="toolbar">
                 <h2>完成プレビュー</h2>
@@ -438,10 +422,9 @@
                     <div>
                         <label>レイアウト: </label>
                         <select id="layoutMode" onchange="renderPreviewView()">
-                            <option value="vertical">縦長 (グリッド)</option>
-                            <option value="horizontal">横長 (リスト風)</option>
-                            <option value="iriam">ワイドヘッダーサイズ</option>
-                            <option value="custom">新規作成 (カスタム)</option>
+                            <option value="vertical">縦長</option>
+                            <option value="horizontal">横長</option>
+                            <option value="custom">新規</option>
                         </select>
                     </div>
                     <div>
@@ -460,7 +443,7 @@
                 </div>
             </div>
             <div id="previewExportArea" style="padding: 10px; border-radius: 8px;">
-                <h2 id="previewAppTitle" style="text-align: center; margin-bottom: 1.5rem;">クリエイティブ一覧</h2>
+                <h2 id="previewAppTitle" style="text-align: center; margin-bottom: 1.5rem;">カタログ一覧</h2>
                 <div id="previewContainer"></div>
             </div>
         </section>
@@ -536,7 +519,6 @@
 
         function getActiveCategories() {
             const activeCategoryIds = [...new Set(items.map(item => item.category))];
-            // categoryOrderの順序を維持しつつ、アクティブなものを返す。新規で追加されたものがあれば末尾に足す
             activeCategoryIds.forEach(id => {
                 if (!categoryOrder.includes(id)) {
                     categoryOrder.push(id);
@@ -657,7 +639,6 @@
             const mode = document.getElementById('previewDisplayMode').value;
             let gridClass = 'items-grid layout-vertical';
             if (layout === 'horizontal') gridClass = 'items-grid layout-horizontal';
-            if (layout === 'iriam') gridClass = 'items-grid layout-iriam';
             if (layout === 'custom') gridClass = 'items-grid layout-custom';
 
             const activeCategories = getActiveCategories();
@@ -732,6 +713,67 @@
             if (target) target.text = val;
         }
 
+        // バックアップ保存機能
+        function exportStateFile() {
+            const backupData = {
+                appTitle: document.getElementById('appTitle').value,
+                categoriesMap: categoriesMap,
+                categoryOrder: categoryOrder,
+                items: items,
+                categoryHeaderTexts: categoryHeaderTexts,
+                customCategoryNames: customCategoryNames,
+                layoutMode: document.getElementById('layoutMode').value,
+                previewDisplayMode: document.getElementById('previewDisplayMode').value,
+                editDisplayMode: document.getElementById('editDisplayMode').value,
+                bgColor: document.getElementById('bgColorPicker').value
+            };
+
+            const jsonStr = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'catalog_backup.json';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // バックアップ復元機能
+        function importStateFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.appTitle !== undefined) document.getElementById('appTitle').value = data.appTitle;
+                    if (data.categoriesMap) categoriesMap = data.categoriesMap;
+                    if (data.categoryOrder) categoryOrder = data.categoryOrder;
+                    if (data.items) items = data.items;
+                    if (data.categoryHeaderTexts) categoryHeaderTexts = data.categoryHeaderTexts;
+                    if (data.customCategoryNames) customCategoryNames = data.customCategoryNames;
+                    if (data.layoutMode) document.getElementById('layoutMode').value = data.layoutMode;
+                    if (data.previewDisplayMode) document.getElementById('previewDisplayMode').value = data.previewDisplayMode;
+                    if (data.editDisplayMode) document.getElementById('editDisplayMode').value = data.editDisplayMode;
+                    if (data.bgColor) {
+                        document.getElementById('bgColorPicker').value = data.bgColor;
+                        changeBackgroundColor();
+                    }
+
+                    renderInsertQuickView();
+                    renderEditView();
+                    renderPreviewView();
+                    alert('バックアップファイルから状態を正常に復元しました！');
+                } catch (err) {
+                    console.error(err);
+                    alert('ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。');
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
         // ドラッグ＆ドロップ（カテゴリ単位）
         let draggedCatId = null;
 
@@ -795,7 +837,6 @@
 
             if (!draggedItem || !targetItem) return;
 
-            // 同じカテゴリ内での並び替え、または別カテゴリへのドロップ対応
             draggedItem.category = targetItem.category;
 
             const fromIndex = items.findIndex(i => i.id === draggedItemId);
@@ -821,7 +862,7 @@
                 scale: 2
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = isTransparent ? 'creative-catalog-transparent.png' : 'creative-catalog.png';
+                link.download = isTransparent ? 'catalog-transparent.png' : 'catalog.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             });
@@ -829,4 +870,3 @@
     </script>
 </body>
 </html>
-
